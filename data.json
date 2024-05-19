@@ -1,0 +1,72 @@
+[
+  {
+    "ROW_NUM": 1,
+    "CODE": 101,
+    "NAME": "Nguyen Van A 1",
+    "NAME_GROUP": "Group A",
+    "END_GROUP": 10000
+  },
+  {
+    "ROW_NUM": 2,
+    "CODE": 102,
+    "NAME": "Nguyen Van A 2",
+    "NAME_GROUP": "Group A",
+    "END_GROUP": 10000
+  },
+  {
+    "ROW_NUM": 3,
+    "CODE": 103,
+    "NAME": "Nguyen Van A 3",
+    "NAME_GROUP": "Group A",
+    "END_GROUP": 10000
+  },
+  {
+    "ROW_NUM": 4,
+    "CODE": 104,
+    "NAME": "Nguyen Van A 4",
+    "NAME_GROUP": "Group A",
+    "END_GROUP": 10000
+  },
+  {
+    "ROW_NUM": 5,
+    "CODE": 105,
+    "NAME": "Nguyen Van A 5",
+    "NAME_GROUP": "Group A",
+    "END_GROUP": 10000
+  },
+  {
+    "ROW_NUM": 6,
+    "CODE": 106,
+    "NAME": "Nguyen Van A 6",
+    "NAME_GROUP": "Group B",
+    "END_GROUP": 25000
+  },
+  {
+    "ROW_NUM": 7,
+    "CODE": 107,
+    "NAME": "Nguyen Van A 7",
+    "NAME_GROUP": "Group B",
+    "END_GROUP": 25000
+  },
+  {
+    "ROW_NUM": 8,
+    "CODE": 108,
+    "NAME": "Nguyen Van A 8",
+    "NAME_GROUP": "Group B",
+    "END_GROUP": 25000
+  },
+  {
+    "ROW_NUM": 9,
+    "CODE": 109,
+    "NAME": "Nguyen Van A 9",
+    "NAME_GROUP": "Group B",
+    "END_GROUP": 25000
+  },
+  {
+    "ROW_NUM": 10,
+    "CODE": 110,
+    "NAME": "Nguyen Van A 10",
+    "NAME_GROUP": "Group B",
+    "END_GROUP": 25000
+  }
+]
