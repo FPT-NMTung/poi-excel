@@ -33,8 +33,10 @@ public class Main {
 
         JsonObject jsonArrData = processData(configSetting, sourceData);
 
-        String encode = jsonArrData.encode();
-//        generateFile(wb, configSetting, jsonArrData);
+        String encodeTemp = jsonArrData.encodePrettily();
+        System.out.println(encodeTemp);
+
+        generateFile(wb, configSetting, jsonArrData);
 
         System.out.println("Export done!");
     }
@@ -100,7 +102,6 @@ public class Main {
             JsonObject itemData = sourceData.getJsonObject(index);
 
             processDataRecursive(resultData, itemData, 0, configSetting);
-            System.out.println(resultData.encodePrettily());
         }
 
         return resultData;
@@ -145,13 +146,8 @@ public class Main {
                     processDataRecursive(keyOb.getJsonObject("child") ,itemData, level + 1, configSetting);
                 }
             } else {
-                JsonObject keyOb = dataObject.getJsonObject(keyString.toString());
-
-                keyOb.put("value", keyObject);
-
                 if (level + 1 < configSetting.getTotalGroup()) {
-                    keyOb.put("child", new JsonObject());
-                    processDataRecursive(keyOb.getJsonObject("child") ,itemData, level + 1, configSetting);
+                    processDataRecursive(findKeyString.getJsonObject("child") ,itemData, level + 1, configSetting);
                 }
             }
         } else {
@@ -161,7 +157,7 @@ public class Main {
         }
     }
 
-    private static void generateFile (XSSFWorkbook sourceTemplate, ConfigSetting configSetting, JsonArray jsonArrData) throws Exception {
-
+    private static void generateFile (XSSFWorkbook sourceTemplate, ConfigSetting configSetting, JsonObject jsonArrData) throws Exception {
+        
     }
 }
