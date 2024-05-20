@@ -31,9 +31,10 @@ public class Main {
         String jsonStr = IOUtils.toString(new FileReader("./data.json"));
         JsonArray sourceData = new JsonArray(jsonStr);
 
-        JsonArray jsonArrData = processData(sourceData);
+        JsonObject jsonArrData = processData(configSetting, sourceData);
 
-        generateFile(wb, configSetting, jsonArrData);
+        String encode = jsonArrData.encode();
+//        generateFile(wb, configSetting, jsonArrData);
 
         System.out.println("Export done!");
     }
@@ -92,16 +93,17 @@ public class Main {
         return configSetting;
     }
 
-    private static JsonArray processData (ConfigSetting configSetting, JsonArray sourceData) {
+    private static JsonObject processData (ConfigSetting configSetting, JsonArray sourceData) {
         JsonObject resultData = new JsonObject();
 
         for (int index = 0; index < sourceData.size(); index++) {
             JsonObject itemData = sourceData.getJsonObject(index);
 
             processDataRecursive(resultData, itemData, 0, configSetting);
+            System.out.println(resultData.encodePrettily());
         }
 
-        return null;
+        return resultData;
     }
 
     private static void processDataRecursive (JsonObject resultDataLevel, JsonObject itemData, int level, ConfigSetting configSetting) {
@@ -110,16 +112,52 @@ public class Main {
             return;
         }
 
+        if (resultDataLevel.encode().equals("{}")) {
+            resultDataLevel.put("level", level);
+            resultDataLevel.put("data", new JsonObject());
+        }
+
         // Get data follow config file
         String[] columnData = configSetting.getArrRange()[level].getColumnData();
-        if (columnData != null) {
-            StringBuilder key = new StringBuilder();
+        boolean isColumnDataIsEmpty = configSetting.getArrRange()[level].isColumnDataIsEmpty();
+
+        if (!isColumnDataIsEmpty) {
+            StringBuilder keyString = new StringBuilder();
+            JsonObject keyObject = new JsonObject();
             for (String columnDatum : columnData) {
-                key.append(itemData.getValue(columnDatum).toString());
+                keyString.append(itemData.getValue(columnDatum).toString());
+                keyObject.put(columnDatum, itemData.getValue(columnDatum).toString());
             }
 
             // Check exist key in result object
-            resultDataLevel.get
+            JsonObject dataObject = resultDataLevel.getJsonObject("data");
+            JsonObject findKeyString = dataObject.getJsonObject(keyString.toString());
+
+            if (findKeyString == null) {
+                dataObject.put(keyString.toString(), new JsonObject());
+
+                JsonObject keyOb = dataObject.getJsonObject(keyString.toString());
+
+                keyOb.put("value", keyObject);
+
+                if (level + 1 < configSetting.getTotalGroup()) {
+                    keyOb.put("child", new JsonObject());
+                    processDataRecursive(keyOb.getJsonObject("child") ,itemData, level + 1, configSetting);
+                }
+            } else {
+                JsonObject keyOb = dataObject.getJsonObject(keyString.toString());
+
+                keyOb.put("value", keyObject);
+
+                if (level + 1 < configSetting.getTotalGroup()) {
+                    keyOb.put("child", new JsonObject());
+                    processDataRecursive(keyOb.getJsonObject("child") ,itemData, level + 1, configSetting);
+                }
+            }
+        } else {
+            JsonObject dataObject = resultDataLevel.getJsonObject("data");
+
+            dataObject.put(itemData.getString("ROW_NUM"), itemData);
         }
     }
 

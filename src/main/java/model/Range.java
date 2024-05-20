@@ -34,4 +34,8 @@ public class Range {
     public void setColumnData(String[] columnData) {
         this.columnData = columnData;
     }
+
+    public boolean isColumnDataIsEmpty () {
+        return columnData == null || columnData.length == 0 || (columnData.length == 1 && columnData[0].trim().isEmpty());
+    }
 }

@@ -1,8 +1,41 @@
 {
-  "type": "range_0",
-  "row": {
-    "123ABC": {
-      "value": {"NAME_GROUP": "Group A", }
+  "level": 0,
+  "data": {
+    "Group A10000": {
+      "value": {
+        "NAME_GROUP": "Group A",
+        "END_GROUP": "10000"
+      },
+      "child": {
+        "level": 1,
+        "data": {
+          "1": {
+            "ROW_NUM": 1,
+            "CODE": 101,
+            "NAME": "Nguyen Van A 1",
+            "NAME_GROUP": "Group A",
+            "END_GROUP": 10000
+          }
+        }
+      }
+    },
+    "Group B25000": {
+      "value": {
+        "NAME_GROUP": "Group B",
+        "END_GROUP": "25000"
+      },
+      "child": {
+        "level": 1,
+        "data": {
+          "6": {
+            "ROW_NUM": 6,
+            "CODE": 106,
+            "NAME": "Nguyen Van A 6",
+            "NAME_GROUP": "Group B",
+            "END_GROUP": 25000
+          }
+        }
+      }
     }
   }
 }
