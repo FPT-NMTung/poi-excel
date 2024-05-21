@@ -10,6 +10,9 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Test {
     public static void main(String[] args) throws Exception {
@@ -23,22 +26,14 @@ public class Test {
 
         XSSFSheet sheet = wb.getSheetAt(0);
 
-//        XSSFRow row = sheet.getRow(2);
-//        XSSFCell cell = row.getCell(4);
-
-        CellAddress ca = new CellAddress("E10");
-
-        System.out.println(ca.getRow());
-        System.out.println(ca.getColumn());
-
         CellCopyPolicy cellCopyPolicy = new CellCopyPolicy();
 
-//        sheet.copyRows(1, 3, 10, cellCopyPolicy);
+//        sheet.copyRows(0, 2, 10, cellCopyPolicy);
+        int lastRow = sheet.getLastRowNum();
+        sheet.shiftRows(1, lastRow, 1, true, true);
 
-//        FileOutputStream fOut = new FileOutputStream("./aaaaaaaaaa.xlsx");
-//        wb.write(fOut);
-//        fOut.close();
-
-        System.out.println("123");
+        FileOutputStream fOut = new FileOutputStream("./aaaaaaaaaa.xlsx");
+        wb.write(fOut);
+        fOut.close();
     }
 }

@@ -1,38 +1,132 @@
 {
-  "level": 0,
-  "data": {
-    "Group A10000": {
-      "value": {
-        "NAME_GROUP": "Group A",
-        "END_GROUP": "10000"
+  "level" : 0,
+  "data" : {
+    "Parent 1" : {
+      "value" : {
+        "PARENT" : "Parent 1"
       },
-      "child": {
-        "level": 1,
-        "data": {
-          "1": {
-            "ROW_NUM": 1,
-            "CODE": 101,
-            "NAME": "Nguyen Van A 1",
-            "NAME_GROUP": "Group A",
-            "END_GROUP": 10000
+      "child" : {
+        "level" : 1,
+        "data" : {
+          "1" : {
+            "value" : {
+              "ROW_NUM" : 1,
+              "CODE" : "A001",
+              "NAME" : "Nguyen Van A001",
+              "NAME_GROUP" : "Group 1",
+              "END_GROUP" : "Group 1",
+              "PARENT" : "Parent 1"
+            }
+          },
+          "2" : {
+            "value" : {
+              "ROW_NUM" : 2,
+              "CODE" : "A002",
+              "NAME" : "Nguyen Van A002",
+              "NAME_GROUP" : "Group 1",
+              "END_GROUP" : "Group 1",
+              "PARENT" : "Parent 1"
+            }
+          },
+          "3" : {
+            "value" : {
+              "ROW_NUM" : 3,
+              "CODE" : "A003",
+              "NAME" : "Nguyen Van A003",
+              "NAME_GROUP" : "Group 1",
+              "END_GROUP" : "Group 1",
+              "PARENT" : "Parent 1"
+            }
+          },
+          "4" : {
+            "value" : {
+              "ROW_NUM" : 4,
+              "CODE" : "A004",
+              "NAME" : "Nguyen Van A004",
+              "NAME_GROUP" : "Group 1",
+              "END_GROUP" : "Group 1",
+              "PARENT" : "Parent 1"
+            }
           }
         }
       }
     },
-    "Group B25000": {
-      "value": {
-        "NAME_GROUP": "Group B",
-        "END_GROUP": "25000"
+    "Parent 2" : {
+      "value" : {
+        "PARENT" : "Parent 2"
       },
-      "child": {
-        "level": 1,
-        "data": {
-          "6": {
-            "ROW_NUM": 6,
-            "CODE": 106,
-            "NAME": "Nguyen Van A 6",
-            "NAME_GROUP": "Group B",
-            "END_GROUP": 25000
+      "child" : {
+        "level" : 1,
+        "data" : {
+          "5" : {
+            "value" : {
+              "ROW_NUM" : 5,
+              "CODE" : "A005",
+              "NAME" : "Nguyen Van A005",
+              "NAME_GROUP" : "Group 1",
+              "END_GROUP" : "Group 1",
+              "PARENT" : "Parent 2"
+            }
+          },
+          "6" : {
+            "value" : {
+              "ROW_NUM" : 6,
+              "CODE" : "A006",
+              "NAME" : "Nguyen Van A006",
+              "NAME_GROUP" : "Group 1",
+              "END_GROUP" : "Group 1",
+              "PARENT" : "Parent 2"
+            }
+          },
+          "7" : {
+            "value" : {
+              "ROW_NUM" : 7,
+              "CODE" : "A007",
+              "NAME" : "Nguyen Van A007",
+              "NAME_GROUP" : "Group 1",
+              "END_GROUP" : "Group 1",
+              "PARENT" : "Parent 2"
+            }
+          },
+          "8" : {
+            "value" : {
+              "ROW_NUM" : 8,
+              "CODE" : "A008",
+              "NAME" : "Nguyen Van A008",
+              "NAME_GROUP" : "Group 1",
+              "END_GROUP" : "Group 1",
+              "PARENT" : "Parent 2"
+            }
+          }
+        }
+      }
+    },
+    "Parent 3" : {
+      "value" : {
+        "PARENT" : "Parent 3"
+      },
+      "child" : {
+        "level" : 1,
+        "data" : {
+          "9" : {
+            "value" : {
+              "ROW_NUM" : 9,
+              "CODE" : "A009",
+              "NAME" : "Nguyen Van A009",
+              "NAME_GROUP" : "Group 1",
+              "END_GROUP" : "Group 1",
+              "PARENT" : "Parent 3"
+            }
+          },
+          "10" : {
+            "value" : {
+              "ROW_NUM" : 10,
+              "CODE" : "A010",
+              "NAME" : "Nguyen Van A010",
+              "NAME_GROUP" : "Group 1",
+              "END_GROUP" : "Group 1",
+              "PARENT" : "Parent 3"
+            }
           }
         }
       }
