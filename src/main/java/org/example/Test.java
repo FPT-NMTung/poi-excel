@@ -16,24 +16,30 @@ import java.util.regex.Pattern;
 
 public class Test {
     public static void main(String[] args) throws Exception {
-        File templateFile = new File("template.xlsx");
-        if (!templateFile.exists()) {
-            throw new Exception("Template file not found");
-        }
+//        File templateFile = new File("template.xlsx");
+//        if (!templateFile.exists()) {
+//            throw new Exception("Template file not found");
+//        }
+//
+//        // Convert to POI
+//        XSSFWorkbook wb = new XSSFWorkbook(templateFile);
+//
+//        XSSFSheet sheet = wb.getSheetAt(0);
+//
+//        CellCopyPolicy cellCopyPolicy = new CellCopyPolicy();
+//
+////        sheet.copyRows(0, 2, 10, cellCopyPolicy);
+//        int lastRow = sheet.getLastRowNum();
+//        sheet.shiftRows(1, lastRow, 1, true, true);
+//
+//        FileOutputStream fOut = new FileOutputStream("./aaaaaaaaaa.xlsx");
+//        wb.write(fOut);
+//        fOut.close();
 
-        // Convert to POI
-        XSSFWorkbook wb = new XSSFWorkbook(templateFile);
+        CellAddress cellAddress = new CellAddress(0, 0);
 
-        XSSFSheet sheet = wb.getSheetAt(0);
+        System.out.println(cellAddress.toString());
 
-        CellCopyPolicy cellCopyPolicy = new CellCopyPolicy();
-
-//        sheet.copyRows(0, 2, 10, cellCopyPolicy);
-        int lastRow = sheet.getLastRowNum();
-        sheet.shiftRows(1, lastRow, 1, true, true);
-
-        FileOutputStream fOut = new FileOutputStream("./aaaaaaaaaa.xlsx");
-        wb.write(fOut);
-        fOut.close();
+        System.out.println("12312");
     }
 }

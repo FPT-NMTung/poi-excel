@@ -15,7 +15,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,11 +37,10 @@ public class Main {
         String jsonStr = IOUtils.toString(new FileReader("./data.json"));
         JsonArray sourceData = new JsonArray(jsonStr);
 
+        System.out.println("Start process data...");
         JsonObject jsonArrData = processData(configSetting, sourceData);
 
-        String encodeTemp = jsonArrData.encodePrettily();
-        System.out.println(encodeTemp);
-
+        System.out.println("Start generate data...");
         generateFile(wb, configSetting, jsonArrData, "./result.xlsx");
 
         System.out.println("Export done!");
@@ -106,15 +104,16 @@ public class Main {
         JsonObject resultData = new JsonObject();
 
         for (int index = 0; index < sourceData.size(); index++) {
+            System.out.println("data index: " + index);
             JsonObject itemData = sourceData.getJsonObject(index);
 
-            processDataRecursive(resultData, itemData, 0, configSetting);
+            processDataRecursive(index, resultData, itemData, 0, configSetting);
         }
 
         return resultData;
     }
 
-    private static void processDataRecursive (JsonObject resultDataLevel, JsonObject itemData, int level, ConfigSetting configSetting) {
+    private static void processDataRecursive (int indexData, JsonObject resultDataLevel, JsonObject itemData, int level, ConfigSetting configSetting) {
         // Condition break out recursive
         if (level >= configSetting.getTotalGroup()) {
             return;
@@ -150,22 +149,22 @@ public class Main {
 
                 if (level + 1 < configSetting.getTotalGroup()) {
                     keyOb.put("child", new JsonObject());
-                    processDataRecursive(keyOb.getJsonObject("child") ,itemData, level + 1, configSetting);
+                    processDataRecursive(indexData, keyOb.getJsonObject("child") ,itemData, level + 1, configSetting);
                 }
             } else {
                 if (level + 1 < configSetting.getTotalGroup()) {
-                    processDataRecursive(findKeyString.getJsonObject("child") ,itemData, level + 1, configSetting);
+                    processDataRecursive(indexData, findKeyString.getJsonObject("child") ,itemData, level + 1, configSetting);
                 }
             }
         } else {
             JsonObject dataObject = resultDataLevel.getJsonObject("data");
             JsonObject valueObject = new JsonObject();
             valueObject.put("value", itemData);
-            dataObject.put(itemData.getString("ROW_NUM"), valueObject);
+            dataObject.put(String.valueOf(indexData), valueObject);
         }
     }
 
-    private static Range appendTemplateFollowLevel (int level, int rowDestNum, XSSFSheet sheet, ConfigSetting configSetting) throws Exception {
+    private static Range appendTemplateFollowLevel (int level, int startRow, int endRow, XSSFSheet sheet, ConfigSetting configSetting) throws Exception {
         Range selectedRange = configSetting.getArrRange()[level];
 
         CellAddress beginCellAddress = new CellAddress(selectedRange.getBegin());
@@ -174,56 +173,73 @@ public class Main {
         int lastRow = sheet.getLastRowNum();
 
         // Move row for get more space
-        sheet.shiftRows(rowDestNum, lastRow, endCellAddress.getRow() - beginCellAddress.getRow() + 1, true, true);
-
-
-
+        int nextEndRow = endRow + 1;
+        int heightTemplateLevel = selectedRange.getHeightRange();
+//        sheet.shiftRows(nextEndRow, lastRow, heightTemplateLevel, true, true);
 
         // Duplicate template
-        sheet.copyRows(beginCellAddress.getRow(), endCellAddress.getRow(), rowDestNum, new CellCopyPolicy());
+        int beginRowCopy = beginCellAddress.getRow();
+        int endRowCopy = endCellAddress.getRow();
+        sheet.copyRows(beginRowCopy, endRowCopy, nextEndRow, new CellCopyPolicy());
 
         FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
         sheet.getWorkbook().write(fOut);
         fOut.close();
 
-        XSSFCell newBeginCell = sheet.getRow(rowDestNum).getCell(beginCellAddress.getColumn());
-        XSSFCell newEndCell = sheet.getRow(rowDestNum + (endCellAddress.getRow() - beginCellAddress.getRow())).getCell(endCellAddress.getColumn());
+        // Create new address range
+        int colNumBeginCellAddress = beginCellAddress.getColumn();
+        int colNumEndCellAddress = endCellAddress.getColumn();
+        CellAddress newBeginCell = new CellAddress(nextEndRow, colNumBeginCellAddress);
+        CellAddress newEndCell = new CellAddress(endRow + heightTemplateLevel, colNumEndCellAddress);
 
-        return new Range(newBeginCell.getAddress().toString(), newEndCell.getAddress().toString());
+        return new Range(newBeginCell.toString(), newEndCell.toString());
     }
 
-    private static Range copyTemplateFollowLevel (int level, int rowDestNum, XSSFSheet sheet, ConfigSetting configSetting) {
+    private static Range copyTemplateFollowLevel (int level, int startRow, int endRow, XSSFSheet sheet, ConfigSetting configSetting) {
         Range selectedRange = configSetting.getArrRange()[level];
+        Range selectedRangeParent = configSetting.getArrRange()[level - 1];
 
         CellAddress beginCellAddress = new CellAddress(selectedRange.getBegin());
         CellAddress endCellAddress = new CellAddress(selectedRange.getEnd());
 
-        XSSFCell newBeginCell = sheet.getRow(rowDestNum - beginCellAddress.getRow() + endCellAddress.getRow() - 1).getCell(beginCellAddress.getColumn());
-        XSSFCell newEndCell = sheet.getRow(rowDestNum - 1).getCell(endCellAddress.getColumn());
+        CellAddress beginCellAddressParent = new CellAddress(selectedRangeParent.getBegin());
 
-        return new Range(newBeginCell.getAddress().toString(), newEndCell.getAddress().toString());
+        int rowNumBeginCellAddress = startRow + (beginCellAddress.getRow() - beginCellAddressParent.getRow());
+        int colNumBeginCellAddress = beginCellAddress.getColumn();
+        int colNumEndCellAddress = endCellAddress.getColumn();
+        int heightTemplateLevel = selectedRange.getHeightRange();
+
+        CellAddress newBeginCell = new CellAddress(rowNumBeginCellAddress, colNumBeginCellAddress);
+        CellAddress newEndCell = new CellAddress(rowNumBeginCellAddress + heightTemplateLevel - 1, colNumEndCellAddress);
+
+        return new Range(newBeginCell.toString(), newEndCell.toString());
     }
 
     private static void generateFile (XSSFWorkbook sourceTemplate, ConfigSetting configSetting, JsonObject jsonArrData, String path) throws Exception {
         // Get sheet data
         XSSFSheet sheet = sourceTemplate.getSheetAt(0);
 
-        int beginRowP = new CellAddress(configSetting.getArrRange()[0].getEnd()).getRow() + 1;
+        int endRowTemplate = new CellAddress(configSetting.getArrRange()[0].getEnd()).getRow();
 
-        generateTemplateAndFillData(0, beginRowP, jsonArrData, sheet, configSetting);
+        // Move footer
+        int heightTable = calculateTotalTableHeightRecursive(configSetting, jsonArrData, 0);
+        sheet.shiftRows(new CellAddress(configSetting.getArrRange()[0].getEnd()).getRow() + 1, sheet.getLastRowNum(), heightTable, true, true);
+
+        generateTemplateAndFillData(0, 0, endRowTemplate, jsonArrData, sheet, configSetting);
 
         // remove range template
-        removeRangeTemplate(configSetting, sheet);
+//        removeRangeTemplate(configSetting, sheet);
 
         FileOutputStream fOut = new FileOutputStream(path);
         sourceTemplate.write(fOut);
         fOut.close();
     }
 
-    private static int generateTemplateAndFillData (int level, int beginRowStart, JsonObject jsonArrData, XSSFSheet targetSheet, ConfigSetting configSetting) throws Exception {
+    private static int generateTemplateAndFillData (int level, int startRowParent, int endRowParent, JsonObject jsonArrData, XSSFSheet targetSheet, ConfigSetting configSetting) throws Exception {
         // Get data object from jsonArrData
         JsonObject data = jsonArrData.getJsonObject("data");
-        int beginRow = beginRowStart;
+        int endRow = endRowParent;
+        int startRow = startRowParent;
         int indexData = 0;
         int totalAppendRow = 0;
 
@@ -232,14 +248,15 @@ public class Main {
 
             int appendRow = 0;
             if (indexData == 0 && level > 0) {
-                Range newCopyAddressRange = copyTemplateFollowLevel(level, beginRow, targetSheet, configSetting);
+                Range newCopyAddressRange = copyTemplateFollowLevel(level, startRow, endRow + totalAppendRow, targetSheet, configSetting);
+                startRow = new CellAddress(newCopyAddressRange.getBegin()).getRow();
 
                 // fill data to new address range
                 fillData(newCopyAddressRange, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet, configSetting);
-
             } else {
-                Range newAppendAddressRange = appendTemplateFollowLevel(level, beginRow + totalAppendRow, targetSheet, configSetting);
+                Range newAppendAddressRange = appendTemplateFollowLevel(level, startRow, endRow + totalAppendRow, targetSheet, configSetting);
                 appendRow = newAppendAddressRange.getHeightRange();
+                startRow = new CellAddress(newAppendAddressRange.getBegin()).getRow();
 
                 // fill data to new address range
                 fillData(newAppendAddressRange, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet, configSetting);
@@ -254,7 +271,7 @@ public class Main {
             if (level + 1 < configSetting.getTotalGroup()) {
 
                 JsonObject childData = ((JsonObject) item.getValue()).getJsonObject("child");
-                appendRow = generateTemplateAndFillData(level + 1, beginRow + totalAppendRow, childData, targetSheet, configSetting);
+                appendRow = generateTemplateAndFillData(level + 1, startRow, endRow + totalAppendRow, childData, targetSheet, configSetting);
 
                 totalAppendRow += appendRow;
             }
@@ -298,7 +315,7 @@ public class Main {
                 }
 
                 String valueCell = cell.getStringCellValue();
-                if (valueCell != null) {
+                if (valueCell != null && !valueCell.isEmpty()) {
                     Pattern pattern = Pattern.compile("<#(.*?)>");
                     Matcher matcher = pattern.matcher(valueCell);
 
@@ -320,5 +337,29 @@ public class Main {
                 }
             }
         }
+    }
+
+    private static int calculateTotalTableHeightRecursive(ConfigSetting configSetting, JsonObject data, int level) {
+        int totalHeight = 0;
+
+        // Get height only level
+        int heightTemplateLevel = configSetting.getArrRange()[level].getHeightRange();
+        if (level + 1 < configSetting.getTotalGroup()) {
+            heightTemplateLevel -= configSetting.getArrRange()[level + 1].getHeightRange();
+        }
+
+        int sizeObject = data.getJsonObject("data").size();
+        JsonObject dataObject = data.getJsonObject("data");
+
+        if (level + 1 < configSetting.getTotalGroup()) {
+            for (Map.Entry<String, Object> item: dataObject) {
+                JsonObject childData = ((JsonObject) item.getValue()).getJsonObject("child");
+
+                int heightChildLevel = calculateTotalTableHeightRecursive(configSetting, childData, level + 1);
+                totalHeight += heightChildLevel;
+            }
+        }
+
+        return totalHeight + heightTemplateLevel * sizeObject;
     }
 }
