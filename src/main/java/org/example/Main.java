@@ -27,6 +27,8 @@ public class Main {
             throw new Exception("Template file not found");
         }
 
+        long startTime = System.currentTimeMillis();
+
         // Convert to POI
         XSSFWorkbook wb = new XSSFWorkbook(templateFile);
 
@@ -39,18 +41,22 @@ public class Main {
 
         // Process data
         System.out.println("Data size: " + sourceData.size() + " |" + (sourceData.size() >= 5000 ? " Warning: SLOWWW": ""));
-        System.out.println("Start process data...");
+        System.out.print("Start process data...");
         JsonObject jsonArrData = processData(configSetting, sourceData);
+        System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
         // Generate file
-        System.out.println("Start generate data...");
+        System.out.println("Start generate data... ");
         generateFile(wb, configSetting, jsonArrData, sourceData);
+        System.out.print("Start generate data... ");
+        System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
         // Export file
-        System.out.println("Export file...");
+        System.out.print("Export file...");
         FileOutputStream fOut = new FileOutputStream("./result.xlsx");
         wb.write(fOut);
         fOut.close();
+        System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
         System.out.println("Export done!");
     }
@@ -222,13 +228,13 @@ public class Main {
 
                 // Only generate if it has content between
                 if (beginRowChildTemplate - beginRowParentTemplate > 0) {
-                    targetSheet.copyRows(beginRowParentTemplate, beginRowChildTemplate - 1, startRow + totalAppendRow, new CellCopyPolicy());
+                    copyRows(beginRowParentTemplate, beginRowChildTemplate - 1, startRow + totalAppendRow, targetSheet, configSetting);
 
                     // Fill data to row
                     CellAddress beginRange = new CellAddress(startRow + totalAppendRow, 0);
                     CellAddress endRange = new CellAddress(beginRange.getRow() + beginRowChildTemplate - beginRowParentTemplate - 1, new CellAddress(configSetting.getArrRange()[0].getEnd()).getColumn());
                     Range range = new Range(beginRange.toString(), endRange.toString());
-                    fillData(range, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet, configSetting);
+                    fillData(range, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet);
 
                     totalAppendRow += beginRowChildTemplate - beginRowParentTemplate;
                     exportTempFile(targetSheet);
@@ -250,13 +256,13 @@ public class Main {
                 int beginRowChildTemplate = new CellAddress(configSetting.getArrRange()[level].getBegin()).getRow();
                 int endRowChildTemplate = new CellAddress(configSetting.getArrRange()[level].getEnd()).getRow();
 
-                targetSheet.copyRows(beginRowChildTemplate, endRowChildTemplate, startRow + totalAppendRow, new CellCopyPolicy());
+                copyRows(beginRowChildTemplate, endRowChildTemplate, startRow + totalAppendRow, targetSheet, configSetting);
 
                 // fill data to row
                 CellAddress beginRange = new CellAddress(startRow + totalAppendRow, 0);
                 CellAddress endRange = new CellAddress(beginRange.getRow() + configSetting.getArrRange()[level].getHeightRange() - 1, new CellAddress(configSetting.getArrRange()[0].getEnd()).getColumn());
                 Range range = new Range(beginRange.toString(), endRange.toString());
-                fillData(range, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet, configSetting);
+                fillData(range, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet);
 
                 totalAppendRow += endRowChildTemplate - beginRowChildTemplate + 1;
                 exportTempFile(targetSheet);
@@ -269,13 +275,13 @@ public class Main {
 
                 // Only generate if it has content between
                 if (endRowParentTemplate - endRowChildTemplate > 0) {
-                    targetSheet.copyRows(endRowChildTemplate + 1, endRowParentTemplate, startRow + totalAppendRow, new CellCopyPolicy());
+                    copyRows(endRowChildTemplate + 1, endRowParentTemplate, startRow + totalAppendRow, targetSheet, configSetting);
 
                     // Fill data to row
                     CellAddress beginRange = new CellAddress(startRow + totalAppendRow, 0);
                     CellAddress endRange = new CellAddress(beginRange.getRow() + endRowParentTemplate - endRowChildTemplate - 1, new CellAddress(configSetting.getArrRange()[0].getEnd()).getColumn());
                     Range range = new Range(beginRange.toString(), endRange.toString());
-                    fillData(range, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet, configSetting);
+                    fillData(range, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet);
 
                     totalAppendRow += endRowParentTemplate - endRowChildTemplate;
                     exportTempFile(targetSheet);
@@ -311,7 +317,7 @@ public class Main {
 
             Range range = new Range(cellBegin.toString(), cellEnd.toString());
 
-            fillData(range, firstRowData, sheet, configSetting);
+            fillData(range, firstRowData, sheet);
         }
 
         startRow = new CellAddress(configSetting.getArrRange()[0].getBegin()).getRow() + totalAppend;
@@ -330,7 +336,7 @@ public class Main {
 
             Range range = new Range(cellBegin.toString(), cellEnd.toString());
 
-            fillData(range, firstRowData, sheet, configSetting);
+            fillData(range, firstRowData, sheet);
         }
     }
 
@@ -347,7 +353,7 @@ public class Main {
         sheet.shiftRows(rowNum + heightParent, lastRow, -heightParent);
     }
 
-    private static void fillData (Range range, JsonObject data, XSSFSheet targetSheet, ConfigSetting configSetting) throws Exception {
+    private static void fillData (Range range, JsonObject data, XSSFSheet targetSheet) throws Exception {
         int rowStart = new CellAddress(range.getBegin()).getRow();
         int rowEnd = new CellAddress(range.getEnd()).getRow();
 
@@ -374,7 +380,7 @@ public class Main {
                 }
 
                 if (valueCell != null && !valueCell.isEmpty()) {
-                    Pattern pattern = Pattern.compile("<#(.*?)>");
+                    Pattern pattern = Pattern.compile("<#table.(.*?)>");
                     Matcher matcher = pattern.matcher(valueCell);
 
                     String key;
@@ -389,17 +395,7 @@ public class Main {
                         continue;
                     }
 
-                    String newValue = valueCell.replaceAll("<#(.*?)>", value);
-
-                    XSSFComment comment = cell.getCellComment();
-                    if (comment == null) {
-                        continue;
-                    }
-
-                    String commentValue = String.valueOf(comment.getString());
-                    if (!commentValue.isEmpty()) {
-                        System.out.println(commentValue);
-                    }
+                    String newValue = valueCell.replaceAll("<#table.(.*?)>", value);
 
                     // Check format cell
                     if (cell.getCellStyle().getDataFormat() == 3) {
@@ -492,6 +488,45 @@ public class Main {
                 sheet.addMergedRegion(cellAddresses);
             }
         }
+    }
 
+    private static void copyRows(int startRow, int endRow, int destStartRow, XSSFSheet targetSheet, ConfigSetting configSetting) throws Exception {
+        targetSheet.copyRows(startRow, endRow, destStartRow, new CellCopyPolicy());
+
+        if (configSetting.isMergeCell()) {
+            for (int numRow = startRow; numRow <= endRow; numRow++) {
+                XSSFRow row = targetSheet.getRow(numRow);
+                if (row == null) {
+                    continue;
+                }
+
+                for (int cellNum = 0; cellNum < row.getLastCellNum(); cellNum++) {
+                    XSSFCell cell = row.getCell(cellNum);
+                    if (cell == null) {
+                        continue;
+                    }
+
+                    // Check has comment on cel
+                    XSSFComment comment = cell.getCellComment();
+                    if (comment == null) {
+                        continue;
+                    }
+
+                    String commentValue = String.valueOf(comment.getString());
+
+                    XSSFRow rowData = targetSheet.getRow(destStartRow + numRow - startRow);
+                    if (rowData == null) {
+                        continue;
+                    }
+
+                    XSSFCell cellData = rowData.getCell(cellNum);
+                    if (cellData == null) {
+                        continue;
+                    }
+
+                    cellData.setCellComment(comment);
+                }
+            }
+        }
     }
 }
