@@ -16,15 +16,40 @@ import java.util.regex.Pattern;
 
 public class Test {
     public static void main(String[] args) throws Exception {
-//        File templateFile = new File("template.xlsx");
-//        if (!templateFile.exists()) {
-//            throw new Exception("Template file not found");
-//        }
-//
-//        // Convert to POI
-//        XSSFWorkbook wb = new XSSFWorkbook(templateFile);
-//
-//        XSSFSheet sheet = wb.getSheetAt(0);
+        File templateFile = new File("template.xlsx");
+        if (!templateFile.exists()) {
+            throw new Exception("Template file not found");
+        }
+
+
+
+
+        // Convert to POI
+        XSSFWorkbook wb = new XSSFWorkbook(templateFile);
+
+        XSSFSheet sheet = wb.getSheetAt(0);
+
+        for (int i = 0; i < 100; i++) {
+            wb.createSheet("Sheet " + i);
+            System.out.println("Sheet " + i);
+
+            XSSFSheet sheetI = wb.getSheet("Sheet " + i);
+
+            for (int j = 0; j < 200; j++) {
+                XSSFRow row = sheetI.createRow(j);
+                row.createCell(0).setCellValue(j);
+
+                sheetI.shiftRows(0, 0, 20000, true, true);
+            }
+        }
+
+
+
+
+
+
+
+
 //
 //        CellCopyPolicy cellCopyPolicy = new CellCopyPolicy();
 //
@@ -32,9 +57,9 @@ public class Test {
 //        int lastRow = sheet.getLastRowNum();
 //        sheet.shiftRows(1, lastRow, 1, true, true);
 //
-//        FileOutputStream fOut = new FileOutputStream("./aaaaaaaaaa.xlsx");
-//        wb.write(fOut);
-//        fOut.close();
+        FileOutputStream fOut = new FileOutputStream("./aaaaaaaaaa.xlsx");
+        wb.write(fOut);
+        fOut.close();
 
         CellAddress cellAddress = new CellAddress(0, 0);
 

@@ -34,7 +34,7 @@ public class Main {
         ConfigSetting configSetting = getConfigSetting(wb);
 
         // Get JSON data
-        String jsonStr = IOUtils.toString(new FileReader("./data.json"));
+        String jsonStr = IOUtils.toString(new FileReader("./testData.json"));
         JsonArray sourceData = new JsonArray(jsonStr);
 
         System.out.println("Start process data...");
@@ -104,7 +104,9 @@ public class Main {
         JsonObject resultData = new JsonObject();
 
         for (int index = 0; index < sourceData.size(); index++) {
-            System.out.println("data index: " + index);
+            if (index%250 == 0) {
+                System.out.println("data index: " + index);
+            }
             JsonObject itemData = sourceData.getJsonObject(index);
 
             processDataRecursive(index, resultData, itemData, 0, configSetting);
@@ -179,9 +181,9 @@ public class Main {
         int endRowCopy = endCellAddress.getRow();
         sheet.copyRows(beginRowCopy, endRowCopy, nextEndRow, new CellCopyPolicy());
 
-        FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
-        sheet.getWorkbook().write(fOut);
-        fOut.close();
+//        FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
+//        sheet.getWorkbook().write(fOut);
+//        fOut.close();
 
         // Create new address range
         int colNumBeginCellAddress = beginCellAddress.getColumn();
@@ -199,8 +201,8 @@ public class Main {
         int endRowTemplate = new CellAddress(configSetting.getArrRange()[0].getEnd()).getRow();
 
         // Move footer
-        int heightTable = calculateTotalTableHeightRecursive(configSetting, jsonArrData, 0);
-        sheet.shiftRows(new CellAddress(configSetting.getArrRange()[0].getEnd()).getRow() + 1, sheet.getLastRowNum(), heightTable, true, true);
+//        int heightTable = calculateTotalTableHeightRecursive(configSetting, jsonArrData, 0);
+//        sheet.shiftRows(new CellAddress(configSetting.getArrRange()[0].getEnd()).getRow() + 1, sheet.getLastRowNum(), heightTable, true, true);
 
 //        generateTemplateAndFillData(0, 0, endRowTemplate, jsonArrData, sheet, configSetting);
         generateTemplateRootAndFillData(jsonArrData, sheet, configSetting);
@@ -232,8 +234,9 @@ public class Main {
             if (configSetting.getTotalGroup() > 1) {
                 JsonObject childData = ((JsonObject) item.getValue()).getJsonObject("child");
 
-                int heightRangeChild = generateTemplateAndFillData(1, startRowParent, endRowParent, childData, targetSheet, configSetting);
-                numRowEndItem += heightRangeChild;
+                int appendRowChild = generateTemplateAndFillData(1, startRowParent, endRowParent, childData, targetSheet, configSetting);
+                int heightRangeChild = configSetting.getArrRange()[0].getHeightRange();
+                numRowEndItem += heightRangeChild + appendRowChild;
             } else {
                 numRowEndItem += newRange.getHeightRange();
             }
@@ -269,9 +272,9 @@ public class Main {
             totalAppendRow += firstItemRange.getHeightRange() * sizeShift;
         }
 
-        FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
-        targetSheet.getWorkbook().write(fOut);
-        fOut.close();
+//        FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
+//        targetSheet.getWorkbook().write(fOut);
+//        fOut.close();
 
         int numLastItem = 0;
 
@@ -291,65 +294,25 @@ public class Main {
                 fillData(otherItemRange, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet, configSetting);
             }
 
-            fOut = new FileOutputStream("./temp.xlsx");
-            targetSheet.getWorkbook().write(fOut);
-            fOut.close();
+//            fOut = new FileOutputStream("./temp.xlsx");
+//            targetSheet.getWorkbook().write(fOut);
+//            fOut.close();
 
             if (level < configSetting.getTotalGroup() - 1) {
-                int heightChild = generateTemplateAndFillData(level + 1, new CellAddress(firstItemRange.getBegin()).getRow(), 0, ((JsonObject) item.getValue()).getJsonObject("child"), targetSheet, configSetting);
+                int beginRowParent = 0;
+                if (indexData == 0) {
+                    beginRowParent = new CellAddress(firstItemRange.getBegin()).getRow();
+                } else {
+                    beginRowParent = numLastItem - configSetting.getArrRange()[level].getHeightRange() + 1;
+                }
+
+                int heightChild = generateTemplateAndFillData(level + 1, beginRowParent, 0, ((JsonObject) item.getValue()).getJsonObject("child"), targetSheet, configSetting);
                 totalAppendRow += heightChild;
                 numLastItem += heightChild;
             }
 
-            totalAppendRow += appendRow;
             indexData++;
         }
-//        int endRow = endRowParent;
-//        int endRowChild = endRowParent + new CellAddress(configSetting.getArrRange()[level].getEnd()).getRow() - new CellAddress(configSetting.getArrRange()[level - 1].getEnd()).getRow();
-//        int startRow = startRowParent;
-//        int indexData = 0;
-//        int totalAppendRow = 0;
-
-
-
-
-
-//        for (Map.Entry<String, Object> item: data) {
-//            System.out.println("level: " + level + " - Key: " + item.getKey());
-//
-//            int appendRow = 0;
-//            if (indexData == 0 && level > 0) {
-//                Range newCopyAddressRange = copyTemplateFollowLevel(level, startRow, configSetting);
-//                startRow = new CellAddress(newCopyAddressRange.getBegin()).getRow();
-//
-//                // fill data to new address range
-//                fillData(newCopyAddressRange, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet, configSetting);
-//            } else {
-//                Range newAppendAddressRange = appendTemplateFollowLevel(level, endRowChild, targetSheet, configSetting);
-//                appendRow = newAppendAddressRange.getHeightRange();
-//                startRow = new CellAddress(newAppendAddressRange.getBegin()).getRow();
-//
-//                // fill data to new address range
-//                fillData(newAppendAddressRange, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet, configSetting);
-//            }
-//
-//            FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
-//            targetSheet.getWorkbook().write(fOut);
-//            fOut.close();
-//
-//            totalAppendRow += appendRow;
-//            endRowChild += appendRow;
-//
-//            if (level + 1 < configSetting.getTotalGroup()) {
-//
-//                JsonObject childData = ((JsonObject) item.getValue()).getJsonObject("child");
-//                appendRow = generateTemplateAndFillData(level + 1, startRow, endRow + totalAppendRow, childData, targetSheet, configSetting);
-//
-//                totalAppendRow += appendRow;
-//            }
-//
-//            indexData += 1;
-//        }
 
         return totalAppendRow;
     }
