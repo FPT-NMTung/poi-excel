@@ -1,15 +1,17 @@
 package org.example;
 
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import model.MergeCellList;
 import org.apache.poi.ss.usermodel.CellCopyPolicy;
 import org.apache.poi.ss.util.CellAddress;
-import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,42 +31,57 @@ public class Test {
 
         XSSFSheet sheet = wb.getSheetAt(0);
 
-        for (int i = 0; i < 100; i++) {
-            wb.createSheet("Sheet " + i);
-            System.out.println("Sheet " + i);
+        JsonObject jsonObjectComment = new JsonObject();
 
-            XSSFSheet sheetI = wb.getSheet("Sheet " + i);
+        HashMap<String, MergeCellList> mergeCellLists = new HashMap<>();
+        String key = "";
 
-            for (int j = 0; j < 200; j++) {
-                XSSFRow row = sheetI.createRow(j);
-                row.createCell(0).setCellValue(j);
+        for (int i = 0; i < sheet.getLastRowNum(); i++) {
+            XSSFRow row = sheet.getRow(i);
+            if (row == null) {
+                continue;
+            }
 
-                sheetI.shiftRows(0, 0, 20000, true, true);
+            for (int j = 0; j < row.getLastCellNum(); j++) {
+                XSSFCell cell = row.getCell(j);
+                if (cell == null) {
+                    continue;
+                }
+
+                XSSFComment comment = cell.getCellComment();
+                if (comment == null) {
+                    continue;
+                }
+
+                String commentValue = String.valueOf(comment.getString());
+                boolean hasKey = mergeCellLists.containsKey(commentValue);
+                if (!hasKey) {
+                    key = commentValue;
+                    MergeCellList mergeCellList = new MergeCellList(commentValue);
+                    mergeCellList.addCell(new CellAddress(cell));
+                    mergeCellLists.put(commentValue, mergeCellList);
+                } else {
+                    MergeCellList mergeCellList = mergeCellLists.get(commentValue);
+                    mergeCellList.addCell(new CellAddress(cell));
+                    mergeCellLists.put(commentValue, mergeCellList);
+                }
+
+                String valueCell = cell.getStringCellValue();
+                if (valueCell != null && commentValue.contains("(empty)")) {
+                    cell.setCellValue("");
+                }
+                cell.removeCellComment();
             }
         }
 
+        CellRangeAddress cellAddresses = mergeCellLists.get(key).getCellRangeAddress();
 
+        sheet.addMergedRegion(cellAddresses);
 
-
-
-
-
-
-//
-//        CellCopyPolicy cellCopyPolicy = new CellCopyPolicy();
-//
-////        sheet.copyRows(0, 2, 10, cellCopyPolicy);
-//        int lastRow = sheet.getLastRowNum();
-//        sheet.shiftRows(1, lastRow, 1, true, true);
-//
-        FileOutputStream fOut = new FileOutputStream("./aaaaaaaaaa.xlsx");
-        wb.write(fOut);
+        FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
+        sheet.getWorkbook().write(fOut);
         fOut.close();
 
-        CellAddress cellAddress = new CellAddress(0, 0);
-
-        System.out.println(cellAddress.toString());
-
-        System.out.println("12312");
+        System.out.println("Done test!!");
     }
 }

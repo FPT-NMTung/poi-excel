@@ -3,18 +3,18 @@ package org.example;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import model.ConfigSetting;
+import model.MergeCellList;
 import model.Range;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellCopyPolicy;
 import org.apache.poi.ss.util.CellAddress;
-import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -203,10 +203,10 @@ public class Main {
         }
 
         // Merge cell
-//        if (configSetting.isMergeCell()) {
-//            System.out.println("\tMerge cell ...");
-//            mergeCell(sourceTemplate, totalAppend, configSetting);
-//        }
+        if (configSetting.isMergeCell()) {
+            System.out.println("\tMerge cell ...");
+            mergeCell(sourceTemplate);
+        }
     }
 
     private static int generateFileFromTemplate(int level, int startRow, JsonObject jsonArrData, XSSFSheet targetSheet, ConfigSetting configSetting) throws Exception {
@@ -391,6 +391,16 @@ public class Main {
 
                     String newValue = valueCell.replaceAll("<#(.*?)>", value);
 
+                    XSSFComment comment = cell.getCellComment();
+                    if (comment == null) {
+                        continue;
+                    }
+
+                    String commentValue = String.valueOf(comment.getString());
+                    if (!commentValue.isEmpty()) {
+                        System.out.println(commentValue);
+                    }
+
                     // Check format cell
                     if (cell.getCellStyle().getDataFormat() == 3) {
                         try {
@@ -429,5 +439,59 @@ public class Main {
         }
 
         return totalHeight + heightTemplateLevel * sizeObject;
+    }
+
+    private static void mergeCell(XSSFWorkbook wb) {
+        XSSFSheet sheet = wb.getSheetAt(0);
+
+        HashMap<String, MergeCellList> mergeCellLists = new HashMap<>();
+
+        for (int i = 0; i < sheet.getLastRowNum(); i++) {
+            XSSFRow row = sheet.getRow(i);
+            if (row == null) {
+                continue;
+            }
+
+            for (int j = 0; j < row.getLastCellNum(); j++) {
+                XSSFCell cell = row.getCell(j);
+                if (cell == null) {
+                    continue;
+                }
+
+                XSSFComment comment = cell.getCellComment();
+                if (comment == null) {
+                    continue;
+                }
+
+                String commentValue = String.valueOf(comment.getString());
+                boolean hasKey = mergeCellLists.containsKey(commentValue);
+                if (!hasKey) {
+                    MergeCellList mergeCellList = new MergeCellList(commentValue);
+                    mergeCellList.addCell(new CellAddress(cell));
+                    mergeCellLists.put(commentValue, mergeCellList);
+                } else {
+                    MergeCellList mergeCellList = mergeCellLists.get(commentValue);
+                    mergeCellList.addCell(new CellAddress(cell));
+                    mergeCellLists.put(commentValue, mergeCellList);
+                }
+
+                String valueCell = cell.getStringCellValue();
+                if (valueCell != null && commentValue.contains("(empty)")) {
+                    cell.setCellValue("");
+                }
+//                cell.removeCellComment();
+            }
+        }
+
+        for (Map.Entry<String, MergeCellList> item: mergeCellLists.entrySet()) {
+            MergeCellList mergeCellList = item.getValue();
+
+            if (mergeCellList.getCells().size() >= 2) {
+                CellRangeAddress cellAddresses = mergeCellList.getCellRangeAddress();
+
+                sheet.addMergedRegion(cellAddresses);
+            }
+        }
+
     }
 }
