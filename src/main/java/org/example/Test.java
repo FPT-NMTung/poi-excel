@@ -5,6 +5,9 @@ import org.apache.poi.xssf.usermodel.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Test {
     public static void main(String[] args) throws Exception {
@@ -16,28 +19,28 @@ public class Test {
 //        CreationHelper factory = workbook.getCreationHelper();
 
 
-        // Convert to POI
-        XSSFWorkbook wb = new XSSFWorkbook(templateFile);
-
-        XSSFSheet sheet = wb.getSheetAt(0);
-
-        XSSFRow sheetRow = sheet.getRow(6);
-        XSSFCell cell = sheetRow.getCell(1);
-
-//        XSSFComment comment = new XSSFComment("asdawdawdawd", CTComment.);
-
-        CreationHelper factory = wb.getCreationHelper();
-        //get an existing cell or create it otherwise:
-
-        ClientAnchor anchor = factory.createClientAnchor();
-
-        Drawing<XSSFShape> drawing = sheet.createDrawingPatriarch();
-        Comment comment = drawing.createCellComment(anchor);
-        //set the comment text and author
-        comment.setString(factory.createRichTextString("createRichTextString"));
-        comment.setAuthor("setAuthor");
-
-        cell.setCellComment(comment);
+//        // Convert to POI
+//        XSSFWorkbook wb = new XSSFWorkbook(templateFile);
+//
+//        XSSFSheet sheet = wb.getSheetAt(0);
+//
+//        XSSFRow sheetRow = sheet.getRow(6);
+//        XSSFCell cell = sheetRow.getCell(1);
+//
+////        XSSFComment comment = new XSSFComment("asdawdawdawd", CTComment.);
+//
+//        CreationHelper factory = wb.getCreationHelper();
+//        //get an existing cell or create it otherwise:
+//
+//        ClientAnchor anchor = factory.createClientAnchor();
+//
+//        Drawing<XSSFShape> drawing = sheet.createDrawingPatriarch();
+//        Comment comment = drawing.createCellComment(anchor);
+//        //set the comment text and author
+//        comment.setString(factory.createRichTextString("createRichTextString"));
+//        comment.setAuthor("setAuthor");
+//
+//        cell.setCellComment(comment);
 
 //        JsonObject jsonObjectComment = new JsonObject();
 //
@@ -86,10 +89,52 @@ public class Test {
 //
 //        sheet.addMergedRegion(cellAddresses);
 
-        FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
-        sheet.getWorkbook().write(fOut);
-        fOut.close();
+//        FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
+//        sheet.getWorkbook().write(fOut);
+//        fOut.close();
+
+        TreeMap<String, ObjectTest> hashMap = new TreeMap<>();
+
+        hashMap.put("E", new ObjectTest("E", "Address A"));
+        hashMap.put("B", new ObjectTest("B", "Address B"));
+        hashMap.put("D", new ObjectTest("D", "Address D"));
+        hashMap.put("C", new ObjectTest("C", "Address C"));
+
+        for (Map.Entry<String, ObjectTest> aaa: hashMap.entrySet()) {
+            System.out.println(aaa.getValue().toString());
+        }
+
+//        List<String> a = new ArrayList<>(hashMap.keySet());
+//        Collections.sort(a);
+        Pattern pattern = Pattern.compile("<#table.(.*?)>");
+        Matcher matcher = pattern.matcher("qwqqweqwe<#table.2312312313><#merge.1111>qweqw");
+
+        while (matcher.find()) {
+            // Get the group matched using group() method
+            System.out.println(matcher.group(0));
+        }
+
+
+
 
         System.out.println("Done test!!");
+    }
+}
+
+class ObjectTest {
+    private String name;
+    private String address;
+
+    public ObjectTest(String name, String address) {
+        this.name = name;
+        this.address = address;
+    }
+
+    @Override
+    public String toString() {
+        return "ObjectTest{" +
+                "name='" + name + '\'' +
+                ", address='" + address + '\'' +
+                '}';
     }
 }
