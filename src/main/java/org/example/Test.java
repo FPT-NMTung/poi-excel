@@ -1,20 +1,10 @@
 package org.example;
 
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import model.MergeCellList;
-import org.apache.poi.ss.usermodel.CellCopyPolicy;
-import org.apache.poi.ss.util.CellAddress;
-import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Test {
     public static void main(String[] args) throws Exception {
@@ -30,6 +20,24 @@ public class Test {
         XSSFWorkbook wb = new XSSFWorkbook(templateFile);
 
         XSSFSheet sheet = wb.getSheetAt(0);
+
+        XSSFRow sheetRow = sheet.getRow(6);
+        XSSFCell cell = sheetRow.getCell(1);
+
+//        XSSFComment comment = new XSSFComment("asdawdawdawd", CTComment.);
+
+        CreationHelper factory = wb.getCreationHelper();
+        //get an existing cell or create it otherwise:
+
+        ClientAnchor anchor = factory.createClientAnchor();
+
+        Drawing<XSSFShape> drawing = sheet.createDrawingPatriarch();
+        Comment comment = drawing.createCellComment(anchor);
+        //set the comment text and author
+        comment.setString(factory.createRichTextString("createRichTextString"));
+        comment.setAuthor("setAuthor");
+
+        cell.setCellComment(comment);
 
 //        JsonObject jsonObjectComment = new JsonObject();
 //

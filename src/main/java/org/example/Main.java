@@ -6,7 +6,7 @@ import model.ConfigSetting;
 import model.MergeCellList;
 import model.Range;
 import org.apache.commons.io.IOUtils;
-import org.apache.poi.ss.usermodel.CellCopyPolicy;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.*;
@@ -234,10 +234,10 @@ public class Main {
                     CellAddress beginRange = new CellAddress(startRow + totalAppendRow, 0);
                     CellAddress endRange = new CellAddress(beginRange.getRow() + beginRowChildTemplate - beginRowParentTemplate - 1, new CellAddress(configSetting.getArrRange()[0].getEnd()).getColumn());
                     Range range = new Range(beginRange.toString(), endRange.toString());
-                    fillData(range, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet);
+                    fillData(range, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet, configSetting, "<#table.(.*?)>");
 
                     totalAppendRow += beginRowChildTemplate - beginRowParentTemplate;
-                    exportTempFile(targetSheet);
+//                    exportTempFile(targetSheet);
                 }
             }
 
@@ -248,7 +248,7 @@ public class Main {
                 int numGenerateRowChild = generateFileFromTemplate(level + 1, startRow + totalAppendRow, childObject, targetSheet, configSetting);
 
                 totalAppendRow += numGenerateRowChild;
-                exportTempFile(targetSheet);
+//                exportTempFile(targetSheet);
             }
 
             // generate row chill
@@ -262,10 +262,10 @@ public class Main {
                 CellAddress beginRange = new CellAddress(startRow + totalAppendRow, 0);
                 CellAddress endRange = new CellAddress(beginRange.getRow() + configSetting.getArrRange()[level].getHeightRange() - 1, new CellAddress(configSetting.getArrRange()[0].getEnd()).getColumn());
                 Range range = new Range(beginRange.toString(), endRange.toString());
-                fillData(range, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet);
+                fillData(range, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet, configSetting, "<#table.(.*?)>");
 
                 totalAppendRow += endRowChildTemplate - beginRowChildTemplate + 1;
-                exportTempFile(targetSheet);
+//                exportTempFile(targetSheet);
             }
 
             // generate footer row between parent and child (if level not highest)
@@ -281,10 +281,10 @@ public class Main {
                     CellAddress beginRange = new CellAddress(startRow + totalAppendRow, 0);
                     CellAddress endRange = new CellAddress(beginRange.getRow() + endRowParentTemplate - endRowChildTemplate - 1, new CellAddress(configSetting.getArrRange()[0].getEnd()).getColumn());
                     Range range = new Range(beginRange.toString(), endRange.toString());
-                    fillData(range, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet);
+                    fillData(range, ((JsonObject) item.getValue()).getJsonObject("value"), targetSheet, configSetting, "<#table.(.*?)>");
 
                     totalAppendRow += endRowParentTemplate - endRowChildTemplate;
-                    exportTempFile(targetSheet);
+//                    exportTempFile(targetSheet);
                 }
             }
         }
@@ -293,9 +293,9 @@ public class Main {
     }
 
     public static void exportTempFile(XSSFSheet targetSheet) throws Exception {
-//        FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
-//        targetSheet.getWorkbook().write(fOut);
-//        fOut.close();
+        FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
+        targetSheet.getWorkbook().write(fOut);
+        fOut.close();
     }
 
     private static void fillDataGeneral(XSSFWorkbook wb, int totalAppend, ConfigSetting configSetting, JsonObject firstRowData) throws Exception {
@@ -317,7 +317,7 @@ public class Main {
 
             Range range = new Range(cellBegin.toString(), cellEnd.toString());
 
-            fillData(range, firstRowData, sheet);
+            fillData(range, firstRowData, sheet, configSetting, "<#general.(.*?)>");
         }
 
         startRow = new CellAddress(configSetting.getArrRange()[0].getBegin()).getRow() + totalAppend;
@@ -336,7 +336,7 @@ public class Main {
 
             Range range = new Range(cellBegin.toString(), cellEnd.toString());
 
-            fillData(range, firstRowData, sheet);
+            fillData(range, firstRowData, sheet, configSetting, "<#general.(.*?)>");
         }
     }
 
@@ -353,7 +353,7 @@ public class Main {
         sheet.shiftRows(rowNum + heightParent, lastRow, -heightParent);
     }
 
-    private static void fillData (Range range, JsonObject data, XSSFSheet targetSheet) throws Exception {
+    private static void fillData (Range range, JsonObject data, XSSFSheet targetSheet, ConfigSetting configSetting, String regex) throws Exception {
         int rowStart = new CellAddress(range.getBegin()).getRow();
         int rowEnd = new CellAddress(range.getEnd()).getRow();
 
@@ -379,8 +379,49 @@ public class Main {
                     continue;
                 }
 
+                // fill data to comment
+                if (configSetting.isMergeCell()) {
+                    XSSFComment comment = cell.getCellComment();
+                    if (comment != null) {
+//                        exportTempFile(targetSheet);
+                        String commentValue = String.valueOf(comment.getString());
+
+                        Pattern pattern = Pattern.compile("<#merge.(.*?)>");
+                        Matcher matcher = pattern.matcher(commentValue);
+
+                        String key;
+                        if (matcher.find()) {
+                            key = matcher.group(1);
+                        } else {
+                            continue;
+                        }
+
+                        String value = data.getString(key);
+                        if (value == null) {
+                            continue;
+                        }
+
+                        String newValue = commentValue.replaceAll("<#merge.(.*?)>", value);
+
+                        CreationHelper factory = targetSheet.getWorkbook().getCreationHelper();
+
+                        ClientAnchor anchor = factory.createClientAnchor();
+
+                        Drawing<XSSFShape> drawing = targetSheet.createDrawingPatriarch();
+                        Comment newComment = drawing.createCellComment(anchor);
+
+                        newComment.setString(factory.createRichTextString(newValue));
+
+                        cell.removeCellComment();
+                        cell.setCellComment(newComment);
+
+//                        exportTempFile(targetSheet);
+                    }
+                }
+
+                // fill data to cell
                 if (valueCell != null && !valueCell.isEmpty()) {
-                    Pattern pattern = Pattern.compile("<#table.(.*?)>");
+                    Pattern pattern = Pattern.compile(regex);
                     Matcher matcher = pattern.matcher(valueCell);
 
                     String key;
@@ -395,7 +436,7 @@ public class Main {
                         continue;
                     }
 
-                    String newValue = valueCell.replaceAll("<#table.(.*?)>", value);
+                    String newValue = valueCell.replaceAll(regex, value);
 
                     // Check format cell
                     if (cell.getCellStyle().getDataFormat() == 3) {
@@ -475,7 +516,7 @@ public class Main {
                 if (valueCell != null && commentValue.contains("(empty)")) {
                     cell.setCellValue("");
                 }
-//                cell.removeCellComment();
+                cell.removeCellComment();
             }
         }
 
@@ -506,6 +547,8 @@ public class Main {
                         continue;
                     }
 
+//                    exportTempFile(targetSheet);
+
                     // Check has comment on cel
                     XSSFComment comment = cell.getCellComment();
                     if (comment == null) {
@@ -524,7 +567,16 @@ public class Main {
                         continue;
                     }
 
-                    cellData.setCellComment(comment);
+                    CreationHelper factory = targetSheet.getWorkbook().getCreationHelper();
+
+                    ClientAnchor anchor = factory.createClientAnchor();
+
+                    Drawing<XSSFShape> drawing = targetSheet.createDrawingPatriarch();
+                    Comment newComment = drawing.createCellComment(anchor);
+
+                    newComment.setString(factory.createRichTextString(commentValue));
+
+                    cellData.setCellComment(newComment);
                 }
             }
         }
