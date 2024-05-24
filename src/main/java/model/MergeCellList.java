@@ -68,7 +68,7 @@ public class MergeCellList {
         if (this.cells.isEmpty()) {
             return null;
         }
-        System.out.println("13123232");
+
         return new CellRangeAddress(this.firstRow, this.lastRow, this.firstCol, this.lastCol);
     }
 
