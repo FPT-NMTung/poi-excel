@@ -1,0 +1,182 @@
+[
+  {
+    "ROW_NUM": 1,
+    "NAME": "Nguyen Van A001",
+    "SHARE_STATUS": "02",
+    "BALANCE": 100,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_0"
+  },
+  {
+    "ROW_NUM": 2,
+    "NAME": "Nguyen Van A002",
+    "SHARE_STATUS": "48",
+    "BALANCE": 200,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_0"
+  },
+  {
+    "ROW_NUM": 3,
+    "NAME": "Nguyen Van A003",
+    "SHARE_STATUS": "02",
+    "BALANCE": 300,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_0"
+  },
+  {
+    "ROW_NUM": 4,
+    "NAME": "Nguyen Van A004",
+    "SHARE_STATUS": "48",
+    "BALANCE": 400,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_0"
+  },
+  {
+    "ROW_NUM": 5,
+    "NAME": "Nguyen Van A005",
+    "SHARE_STATUS": "02",
+    "BALANCE": 500,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_0"
+  },
+  {
+    "ROW_NUM": 6,
+    "NAME": "Nguyen Van A006",
+    "SHARE_STATUS": "48",
+    "BALANCE": 600,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_0"
+  },
+  {
+    "ROW_NUM": 7,
+    "NAME": "Nguyen Van A007",
+    "SHARE_STATUS": "02",
+    "BALANCE": 700,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_0"
+  },
+  {
+    "ROW_NUM": 8,
+    "NAME": "Nguyen Van A008",
+    "SHARE_STATUS": "48",
+    "BALANCE": 800,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_0"
+  },
+  {
+    "ROW_NUM": 9,
+    "NAME": "Nguyen Van A009",
+    "SHARE_STATUS": "02",
+    "BALANCE": 900,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_0"
+  },
+  {
+    "ROW_NUM": 10,
+    "NAME": "Nguyen Van A0010",
+    "SHARE_STATUS": "48",
+    "BALANCE": 1000,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_0"
+  },
+  {
+    "ROW_NUM": 1,
+    "NAME": "Nguyen Van A001",
+    "SHARE_STATUS": "02",
+    "BALANCE": 100,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_1"
+  },
+  {
+    "ROW_NUM": 2,
+    "NAME": "Nguyen Van A002",
+    "SHARE_STATUS": "48",
+    "BALANCE": 200,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_1"
+  },
+  {
+    "ROW_NUM": 3,
+    "NAME": "Nguyen Van A003",
+    "SHARE_STATUS": "02",
+    "BALANCE": 300,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_1"
+  },
+  {
+    "ROW_NUM": 4,
+    "NAME": "Nguyen Van A004",
+    "SHARE_STATUS": "48",
+    "BALANCE": 400,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_1"
+  },
+  {
+    "ROW_NUM": 5,
+    "NAME": "Nguyen Van A005",
+    "SHARE_STATUS": "02",
+    "BALANCE": 500,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_1"
+  },
+  {
+    "ROW_NUM": 6,
+    "NAME": "Nguyen Van A006",
+    "SHARE_STATUS": "48",
+    "BALANCE": 600,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_1"
+  },
+  {
+    "ROW_NUM": 7,
+    "NAME": "Nguyen Van A007",
+    "SHARE_STATUS": "02",
+    "BALANCE": 700,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_1"
+  },
+  {
+    "ROW_NUM": 8,
+    "NAME": "Nguyen Van A008",
+    "SHARE_STATUS": "48",
+    "BALANCE": 800,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_1"
+  },
+  {
+    "ROW_NUM": 9,
+    "NAME": "Nguyen Van A009",
+    "SHARE_STATUS": "02",
+    "BALANCE": 900,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_1"
+  },
+  {
+    "ROW_NUM": 10,
+    "NAME": "Nguyen Van A0010",
+    "SHARE_STATUS": "48",
+    "BALANCE": 1000,
+    "GENERAL_SHARE_CODE": "FPT",
+    "GENERAL_SHARE_PRICE": 116250,
+    "NAME_TABLE": "TABLE_GENERATE_1"
+  }
+]
