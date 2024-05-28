@@ -9,8 +9,8 @@ public class Converter {
 //        System.out.println(numberToCharVi("123"));
 //        System.out.println(numberToCharVi("12345"));
 //        System.out.println(numberToCharVi("123456"));
-//        System.out.println(numberToCharVi("123456789"));
-        System.out.println(numberToCharVi("99111222333444555666"));
+        System.out.println(numberToCharVi("123456"));
+        System.out.println(numberToCharEn("123456"));
     }
 
     public static String numberToCharVi(String strNumber) {
