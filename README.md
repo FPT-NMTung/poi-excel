@@ -83,3 +83,6 @@ Xem mẫu file [tại đây](./sampleConfigDocx.json).
 |`string`|123456.098|123456.098|
 |`number_char_vi`|123456|một trăm hai mươi ba nghìn bốn trăm năm mươi sáu|
 |`number_char_en`|123456|one hundred twenty-three thousand four hundred fifty-six|
+
+### Performance
+![image](https://github.com/FPT-NMTung/poi-excel/assets/63092029/b081e0ce-3c94-41cd-a799-5ca3b7e7fca4)
