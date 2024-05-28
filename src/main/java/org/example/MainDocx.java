@@ -31,6 +31,8 @@ public class MainDocx {
         String jsonStr = IOUtils.toString(new FileReader("./dataDocx.json"));
         JsonArray sourceData = new JsonArray(jsonStr);
 
+        System.out.println("Data size: " + sourceData.size() + " |" + (sourceData.size() >= 5000 ? " Warning: SLOWWW": ""));
+
         // Get config setting
         JsonObject configSetting = getConfigSetting(doc);
 
@@ -106,6 +108,8 @@ public class MainDocx {
         if (Objects.equals(jsonObject.toString(), "{}")) {
             throw new Exception("Not found JSON config comment");
         }
+
+        removeAllComment(doc);
 
         return jsonObject;
     }
