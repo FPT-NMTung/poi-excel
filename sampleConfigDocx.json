@@ -1,0 +1,60 @@
+{
+  "general": [
+    {
+      "name": "GENERAL_BOND_NAME",
+      "format": "string"
+    },
+    {
+      "name": "GENERAL_BOND_CODE",
+      "format": "string"
+    },
+    {
+      "name": "GENERAL_BOND_PRICE",
+      "data": "GENERAL_BOND_PRICE",
+      "format": "number"
+    },
+    {
+      "name": "GENERAL_BOND_PRICE_VI",
+      "data": "GENERAL_BOND_PRICE",
+      "format": "number_char_vi"
+    },
+    {
+      "name": "GENERAL_BOND_PRICE_EN",
+      "data": "GENERAL_BOND_PRICE",
+      "format": "number_char_en"
+    }
+  ],
+  "table": {
+    "TABLE_GENERATE_0": {
+      "name": "TABLE_GENERATE_0",
+      "index": "ROW_NUM",
+      "start": 2,
+      "column": [
+        {
+          "name": "ROW_NUM",
+          "format": "number"
+        },
+        {
+          "name": "INFO",
+          "format": "string"
+        },
+        {
+          "name": "NUM_MEMBER",
+          "format": "string"
+        },
+        {
+          "name": "NUM_IN",
+          "format": "number"
+        },
+        {
+          "name": "NUM_OUT",
+          "format": "number"
+        },
+        {
+          "name": "NUM_TOTAL",
+          "format": "number"
+        }
+      ]
+    }
+  }
+}
