@@ -1,24 +1,24 @@
 package org.example;
 
+import converter.Converter;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import modelDocx.TableData;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xwpf.usermodel.*;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTComments;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.DecimalFormat;
+import java.util.*;
 
 public class MainDocx {
     public static void main(String[] args) throws Exception {
         // Read template
-        File templateFile = new File("template.docx");
+        File templateFile = new File("Mau 33C-THQ.docx");
         if (!templateFile.exists()) {
             throw new Exception("Template file not found");
         }
@@ -41,6 +41,8 @@ public class MainDocx {
         System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
         // Fill general data
+        startTime = System.currentTimeMillis();
+        System.out.print("Fill general data ... ");
         fillDataGeneral(doc, sourceData.getJsonObject(0), configSetting);
         System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
@@ -91,26 +93,41 @@ public class MainDocx {
         return tableDataList;
     }
 
-    private static JsonObject getConfigSetting(XWPFDocument doc) {
+    private static JsonObject getConfigSetting(XWPFDocument doc) throws Exception {
         XWPFComments comments = doc.getDocComments();
+        JsonObject jsonObject = new JsonObject();
 
-        String content = comments.getComment(0).getText();
+        for (XWPFComment comment: comments.getComments()) {
+            String content = comment.getText();
 
-//        for (XWPFParagraph paragraph : doc.getParagraphs()) {
-//            for (int i = paragraph.getCTP().getCommentRangeStartList().size() - 1; i >= 0; i--) {
-//                paragraph.getCTP().removeCommentRangeStart(i);
-//            }
-//            // remove all comment range end marks
-//            for (int i = paragraph.getCTP().getCommentRangeEndList().size() - 1; i >= 0; i--) {
-//                paragraph.getCTP().removeCommentRangeEnd(i);
-//            }
-//        }
-//
-//        for (int i = comments.getComments().size() - 1; i >= 0; i--) {
-//            comments.removeComment(i);
-//        }
+            jsonObject = new JsonObject(content);
+        }
 
-        return new JsonObject(content);
+        if (Objects.equals(jsonObject.toString(), "{}")) {
+            throw new Exception("Not found JSON config comment");
+        }
+
+        return jsonObject;
+    }
+
+    private static void removeAllComment(XWPFDocument doc) {
+        for (XWPFParagraph paragraph : doc.getParagraphs()) {
+            // remove all comment range start marks
+            for (int i = paragraph.getCTP().getCommentRangeStartList().size() - 1; i >= 0; i--) {
+                paragraph.getCTP().removeCommentRangeStart(i);
+            }
+            // remove all comment range end marks
+            for (int i = paragraph.getCTP().getCommentRangeEndList().size() - 1; i >= 0; i--) {
+                paragraph.getCTP().removeCommentRangeEnd(i);
+            }
+            // remove all comment references
+            for (int i = paragraph.getRuns().size() - 1; i >= 0; i--) {
+                XWPFRun run = paragraph.getRuns().get(i);
+                if (!run.getCTR().getCommentReferenceList().isEmpty()) {
+                    paragraph.removeRun(i);
+                }
+            }
+        }
     }
 
     private static void fillDataGeneral(XWPFDocument doc, JsonObject data, JsonObject configSetting) throws Exception {
@@ -124,6 +141,7 @@ public class MainDocx {
 
             String nameData = ((JsonObject) jsonObject).getString("name");
             String colData = ((JsonObject) jsonObject).getString("data");
+            String format = ((JsonObject) jsonObject).getString("format");
 
             if (colData == null || colData.isEmpty()) {
                 colData = nameData;
@@ -131,6 +149,8 @@ public class MainDocx {
 
             String searchText = "<#general." + nameData + ">";
             String replacement = data.getString(colData);
+
+            replacement = formatField(replacement, format);
 
             // search all paragraph
 
@@ -171,6 +191,9 @@ public class MainDocx {
         int indexTable = 0;
         for (XWPFTable table : tables) {
             // get name table from config
+            if (!table.getText().contains("<#TBG>")) {
+                continue;
+            }
 
             int indexTableConfig = 0;
             String nameTable = "";
@@ -193,12 +216,67 @@ public class MainDocx {
             for (JsonObject rowData: tableData.getRows()) {
                 int startIndexTable = configTable.getInteger("start");
                 XWPFTableRow row = table.getRow(startIndexTable);
-                row.getCell(0).setText("");
-                row.getCell(0).setText(String.valueOf(rowData.getInteger("ROW_NUM")));
+
+                JsonArray columnConfig = configTable.getJsonArray("column");
+                int indexCell = 0;
+                for (XWPFTableCell cell: row.getTableCells()) {
+                    List<XWPFParagraph> paragraphs = cell.getParagraphs();
+
+                    for (XWPFParagraph paragraph: paragraphs) {
+                        while (!paragraph.runsIsEmpty()) {
+                            paragraph.removeRun(0);
+                        }
+                    }
+
+                    JsonObject dataNameColumn = columnConfig.getJsonObject(indexCell);
+
+                    String valueField = rowData.getString(dataNameColumn.getString("name"));
+                    String format = dataNameColumn.getString("format");
+                    cell.setText(formatField(valueField, format));
+                    indexCell++;
+                }
+
                 table.addRow(row);
             }
 
-
+            table.removeRow(configTable.getInteger("start"));
         }
+    }
+
+    private static String formatField(String value, String format) {
+        String result = "";
+
+        if (format == null) {
+            return value;
+        }
+
+        switch (format) {
+            case "number":
+                String pattern = "";
+                if (value.contains(".")) {
+                    int lengthDiv = value.substring(value.indexOf(".")).length();
+                    String[] listZero = new String[lengthDiv];
+                    Arrays.fill(listZero, "0");
+
+                    String subDiv = String.join("", listZero);
+                    pattern = "#,###" + "." + subDiv;
+                } else {
+                    pattern = "#,###";
+                }
+
+                DecimalFormat formatter = new DecimalFormat(pattern);
+                result = formatter.format(Double.parseDouble(value));
+                break;
+            case "number_char_vi":
+                result = Converter.numberToCharVi(value);
+                break;
+            case "number_char_en":
+                result = Converter.numberToCharEn(value);
+                break;
+            default:
+                result = value;
+        }
+
+        return result;
     }
 }
