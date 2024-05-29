@@ -18,7 +18,7 @@ import java.util.*;
 public class MainDocx {
     public static void main(String[] args) throws Exception {
         // Read template
-        File templateFile = new File("template.docx");
+        File templateFile = new File("Mau 33C-THQ.docx");
         if (!templateFile.exists()) {
             throw new Exception("Template file not found");
         }
@@ -180,9 +180,9 @@ public class MainDocx {
             List<XWPFTable> tables = doc.getTables();
             for (XWPFTable table : tables) {
                 // get name table from config
-                if (table.getText().contains("<#TBG>")) {
-                    continue;
-                }
+//                if (table.getText().contains("<#TBG>")) {
+//                    continue;
+//                }
 
                 for (XWPFTableRow row : table.getRows()) {
                     for (XWPFTableCell cell : row.getTableCells()) {
@@ -243,6 +243,7 @@ public class MainDocx {
                 if (indexTableConfig == indexTable) {
                     break;
                 }
+                indexTableConfig++;
             }
             indexTable++;
 
@@ -252,6 +253,7 @@ public class MainDocx {
                 continue;
             }
 
+            int indexRowData = 0;
             for (JsonObject rowData: tableData.getRows()) {
                 int startIndexTable = configTable.getInteger("start");
                 XWPFTableRow row = table.getRow(startIndexTable);
@@ -275,7 +277,8 @@ public class MainDocx {
                     indexCell++;
                 }
 
-                table.addRow(row);
+                table.addRow(row, configTable.getInteger("start") + indexRowData);
+                indexRowData++;
             }
 
             table.removeRow(configTable.getInteger("start"));
