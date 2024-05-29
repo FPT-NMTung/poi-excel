@@ -18,7 +18,7 @@ import java.util.*;
 public class MainDocx {
     public static void main(String[] args) throws Exception {
         // Read template
-        File templateFile = new File("Mau 33C-THQ.docx");
+        File templateFile = new File("template.docx");
         if (!templateFile.exists()) {
             throw new Exception("Template file not found");
         }
@@ -36,23 +36,27 @@ public class MainDocx {
         // Get config setting
         JsonObject configSetting = getConfigSetting(doc);
 
-        // Process data
-        startTime = System.currentTimeMillis();
-        System.out.print("Process data ... ");
-        HashMap<String, TableData> dataProcessed = processData(sourceData, configSetting);
-        System.out.println((System.currentTimeMillis() - startTime) + "ms");
+        if (configSetting.getJsonArray("general") != null) {
+            // Fill general data
+            startTime = System.currentTimeMillis();
+            System.out.print("Fill general data ... ");
+            fillDataGeneral(doc, sourceData.getJsonObject(0), configSetting);
+            System.out.println((System.currentTimeMillis() - startTime) + "ms");
+        }
 
-        // Fill general data
-        startTime = System.currentTimeMillis();
-        System.out.print("Fill general data ... ");
-        fillDataGeneral(doc, sourceData.getJsonObject(0), configSetting);
-        System.out.println((System.currentTimeMillis() - startTime) + "ms");
+        if (configSetting.getJsonObject("table") != null) {
+            // Process data
+            startTime = System.currentTimeMillis();
+            System.out.print("Process data ... ");
+            HashMap<String, TableData> dataProcessed = processData(sourceData, configSetting);
+            System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
-        // Fill table data
-        startTime = System.currentTimeMillis();
-        System.out.print("Fill table data ... ");
-        fillDataTable(doc, dataProcessed, configSetting);
-        System.out.println((System.currentTimeMillis() - startTime) + "ms");
+            // Fill table data
+            startTime = System.currentTimeMillis();
+            System.out.print("Fill table data ... ");
+            fillDataTable(doc, dataProcessed, configSetting);
+            System.out.println((System.currentTimeMillis() - startTime) + "ms");
+        }
 
         FileOutputStream fOut = new FileOutputStream("./result.docx");
         doc.write(fOut);
@@ -99,13 +103,24 @@ public class MainDocx {
         XWPFComments comments = doc.getDocComments();
         JsonObject jsonObject = new JsonObject();
 
+        boolean isHasConfigComment = false;
+
+        if (comments == null) {
+            return new JsonObject();
+        }
+
         for (XWPFComment comment: comments.getComments()) {
             String content = comment.getText();
 
+            if (content == null || content.isEmpty()) {
+                continue;
+            }
+
             jsonObject = new JsonObject(content);
+            isHasConfigComment = true;
         }
 
-        if (Objects.equals(jsonObject.toString(), "{}")) {
+        if (Objects.equals(jsonObject.toString(), "{}") && isHasConfigComment) {
             throw new Exception("Not found JSON config comment");
         }
 
@@ -159,29 +174,49 @@ public class MainDocx {
             // search all paragraph
 
             for (XWPFParagraph paragraph : doc.getParagraphs()) {
-                TextSegment searchTextSegment;
-                while((searchTextSegment = paragraph.searchText(searchText, new PositionInParagraph(0, 0, 0))) != null) {
-                    XWPFRun beginRun = paragraph.getRuns().get(searchTextSegment.getBeginRun());
-                    String textInBeginRun = beginRun.getText(searchTextSegment.getBeginText());
-                    String textBefore = textInBeginRun.substring(0, searchTextSegment.getBeginChar());
+                fillDataToParagraph(paragraph, searchText, replacement);
+            }
 
-                    XWPFRun endRun = paragraph.getRuns().get(searchTextSegment.getEndRun());
-                    String textInEndRun = endRun.getText(searchTextSegment.getEndText());
-                    String textAfter = textInEndRun.substring(searchTextSegment.getEndChar() + 1);
+            List<XWPFTable> tables = doc.getTables();
+            for (XWPFTable table : tables) {
+                // get name table from config
+                if (table.getText().contains("<#TBG>")) {
+                    continue;
+                }
 
-                    if (searchTextSegment.getEndRun() == searchTextSegment.getBeginRun()) {
-                        textInBeginRun = textBefore + replacement + textAfter; // if we have only one run, we need the text before, then the replacement, then the text after in that run
-                    } else {
-                        textInBeginRun = textBefore + replacement; // else we need the text before followed by the replacement in begin run
-                        endRun.setText(textAfter, searchTextSegment.getEndText()); // and the text after in end run
-                    }
-
-                    beginRun.setText(textInBeginRun, searchTextSegment.getBeginText());
-
-                    for (int runBetween = searchTextSegment.getEndRun() - 1; runBetween > searchTextSegment.getBeginRun(); runBetween--) {
-                        paragraph.removeRun(runBetween); // remove not needed runs
+                for (XWPFTableRow row : table.getRows()) {
+                    for (XWPFTableCell cell : row.getTableCells()) {
+                        for (XWPFParagraph paragraph : cell.getParagraphs()) {
+                            fillDataToParagraph(paragraph, searchText, replacement);
+                        }
                     }
                 }
+            }
+        }
+    }
+
+    private static void fillDataToParagraph(XWPFParagraph paragraph, String searchText, String replacement) {
+        TextSegment searchTextSegment;
+        while((searchTextSegment = paragraph.searchText(searchText, new PositionInParagraph(0, 0, 0))) != null) {
+            XWPFRun beginRun = paragraph.getRuns().get(searchTextSegment.getBeginRun());
+            String textInBeginRun = beginRun.getText(searchTextSegment.getBeginText());
+            String textBefore = textInBeginRun.substring(0, searchTextSegment.getBeginChar());
+
+            XWPFRun endRun = paragraph.getRuns().get(searchTextSegment.getEndRun());
+            String textInEndRun = endRun.getText(searchTextSegment.getEndText());
+            String textAfter = textInEndRun.substring(searchTextSegment.getEndChar() + 1);
+
+            if (searchTextSegment.getEndRun() == searchTextSegment.getBeginRun()) {
+                textInBeginRun = textBefore + replacement + textAfter; // if we have only one run, we need the text before, then the replacement, then the text after in that run
+            } else {
+                textInBeginRun = textBefore + replacement; // else we need the text before followed by the replacement in begin run
+                endRun.setText(textAfter, searchTextSegment.getEndText()); // and the text after in end run
+            }
+
+            beginRun.setText(textInBeginRun, searchTextSegment.getBeginText());
+
+            for (int runBetween = searchTextSegment.getEndRun() - 1; runBetween > searchTextSegment.getBeginRun(); runBetween--) {
+                paragraph.removeRun(runBetween); // remove not needed runs
             }
         }
     }
