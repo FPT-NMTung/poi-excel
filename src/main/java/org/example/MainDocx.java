@@ -12,6 +12,8 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTComments;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.*;
 
@@ -287,16 +289,19 @@ public class MainDocx {
 
     private static String formatField(String value, String format) {
         String result = "";
-
+        BigDecimal bd;
         if (format == null) {
             return value;
         }
 
         switch (format) {
             case "number":
+                bd  = new BigDecimal(value);
+                String newValue = bd.stripTrailingZeros().toPlainString();
+
                 String pattern = "";
-                if (value.contains(".")) {
-                    int lengthDiv = value.substring(value.indexOf(".")).length();
+                if (newValue.contains(".")) {
+                    int lengthDiv = newValue.substring(newValue.indexOf(".")).length();
                     String[] listZero = new String[lengthDiv];
                     Arrays.fill(listZero, "0");
 
@@ -307,10 +312,11 @@ public class MainDocx {
                 }
 
                 DecimalFormat formatter = new DecimalFormat(pattern);
-                result = formatter.format(Double.parseDouble(value));
+                result = formatter.format(Double.parseDouble(newValue));
                 break;
             case "number_char_vi":
-                result = Converter.numberToCharVi(value);
+                bd = new BigDecimal(value);
+                result = Converter.numberToCharVi(bd.stripTrailingZeros().toPlainString());
                 break;
             case "number_char_en":
                 result = Converter.numberToCharEn(value);

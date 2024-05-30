@@ -33,7 +33,7 @@ public class Main {
         ConfigSetting configSetting = getConfigSetting(wb);
 
         // Get JSON data
-        String jsonStr = IOUtils.toString(new FileReader("./testData.json"));
+        String jsonStr = IOUtils.toString(new FileReader("./data.json"));
         JsonArray sourceData = new JsonArray(jsonStr);
 
         // Process data
@@ -202,6 +202,9 @@ public class Main {
 
         long startTime;
 
+        sourceTemplate.setForceFormulaRecalculation(true);
+        XSSFFormulaEvaluator.evaluateAllFormulaCells(sourceTemplate);
+
         // Move footer
         System.out.print("\tMove footer... ");
         startTime = System.currentTimeMillis();
@@ -243,6 +246,8 @@ public class Main {
             System.out.println((System.currentTimeMillis() - startTime) + "ms");
             mergeCell(sourceTemplate);
         }
+
+        XSSFFormulaEvaluator.evaluateAllFormulaCells(sourceTemplate);
     }
 
     private static int generateFileFromTemplate(int level, int startRow, ChildTree jsonArrData, XSSFSheet targetSheet, ConfigSetting configSetting) throws Exception {
@@ -322,7 +327,7 @@ public class Main {
         return totalAppendRow;
     }
 
-    public static void exportTempFile(XSSFSheet targetSheet) throws Exception {
+    private static void exportTempFile(XSSFSheet targetSheet) throws Exception {
         FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
         targetSheet.getWorkbook().write(fOut);
         fOut.close();
@@ -401,6 +406,8 @@ public class Main {
                 if (cell == null) {
                     continue;
                 }
+
+                CellType a = cell.getCellType();
 
                 String valueCell = "";
                 try {
