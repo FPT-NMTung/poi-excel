@@ -3,7 +3,7 @@ package org.example;
 import converter.Converter;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import modelDocx.TableData;
+import modelDocx.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xwpf.usermodel.*;
@@ -36,9 +36,9 @@ public class MainDocx {
         System.out.println("Data size: " + sourceData.size() + " |" + (sourceData.size() >= 5000 ? " Warning: SLOWWW": ""));
 
         // Get config setting
-        JsonObject configSetting = getConfigSetting(doc);
+        ConfigSetting configSetting = getConfigSetting(doc);
 
-        if (configSetting.getJsonArray("general") != null) {
+        if (!configSetting.getGeneralData().isEmpty()) {
             // Fill general data
             startTime = System.currentTimeMillis();
             System.out.print("Fill general data ... ");
@@ -46,7 +46,7 @@ public class MainDocx {
             System.out.println((System.currentTimeMillis() - startTime) + "ms");
         }
 
-        if (configSetting.getJsonObject("table") != null) {
+        if (!configSetting.getTableConfigs().isEmpty()) {
             // Process data
             startTime = System.currentTimeMillis();
             System.out.print("Process data ... ");
@@ -54,10 +54,10 @@ public class MainDocx {
             System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
             // Fill table data
-            startTime = System.currentTimeMillis();
-            System.out.print("Fill table data ... ");
-            fillDataTable(doc, dataProcessed, configSetting);
-            System.out.println((System.currentTimeMillis() - startTime) + "ms");
+//            startTime = System.currentTimeMillis();
+//            System.out.print("Fill table data ... ");
+//            fillDataTable(doc, dataProcessed, configSetting);
+//            System.out.println((System.currentTimeMillis() - startTime) + "ms");
         }
 
         FileOutputStream fOut = new FileOutputStream("./result.docx");
@@ -67,22 +67,14 @@ public class MainDocx {
         System.out.println("Export done!");
     }
 
-    private static HashMap<String, TableData> processData(JsonArray sourceData, JsonObject configSetting) {
+    private static HashMap<String, TableData> processData(JsonArray sourceData, ConfigSetting configSetting) {
         HashMap<String, TableData> tableDataList = new HashMap<>();
 
         // Get list table from config
-        JsonObject listTableConfig = configSetting.getJsonObject("table");
-        for (Map.Entry<String, Object> tableConfigObj: listTableConfig) {
-            String nameTable = tableConfigObj.getKey();
-
-            // check exist
-            TableData tableData;
-            if (tableDataList.containsKey(nameTable)) {
-                tableDataList.get(nameTable);
-            } else {
-                tableData = new TableData(nameTable);
-                tableDataList.put(nameTable, tableData);
-            }
+        ArrayList<TableConfig> listTableConfig = configSetting.getTableConfigs();
+        for (TableConfig tableConfig: listTableConfig) {
+            TableData tableData = new TableData(tableConfig.getTableName());
+            tableDataList.put(tableConfig.getTableName(), tableData);
         }
 
         for (Object rowDataObj: sourceData) {
@@ -101,14 +93,14 @@ public class MainDocx {
         return tableDataList;
     }
 
-    private static JsonObject getConfigSetting(XWPFDocument doc) throws Exception {
+    private static ConfigSetting getConfigSetting(XWPFDocument doc) throws Exception {
         XWPFComments comments = doc.getDocComments();
-        JsonObject jsonObject = new JsonObject();
+        ConfigSetting configSetting = new ConfigSetting();
 
         boolean isHasConfigComment = false;
 
         if (comments == null) {
-            return new JsonObject();
+            return configSetting;
         }
 
         for (XWPFComment comment: comments.getComments()) {
@@ -118,17 +110,103 @@ public class MainDocx {
                 continue;
             }
 
-            jsonObject = new JsonObject(content);
+            // parse content comment to json
+            JsonObject jsonConfig = new JsonObject(content);
+
+            // get config general
+            getGeneralConfig(configSetting, jsonConfig);
+
+            // get config table
+            getConfigSettingTable(configSetting, jsonConfig);
             isHasConfigComment = true;
         }
 
-        if (Objects.equals(jsonObject.toString(), "{}") && isHasConfigComment) {
+        if (configSetting.getGeneralData().isEmpty() && configSetting.getTableConfigs().isEmpty() && isHasConfigComment) {
             throw new Exception("Not found JSON config comment");
         }
 
         removeAllComment(doc);
 
-        return jsonObject;
+        return configSetting;
+    }
+
+    private static void getGeneralConfig(ConfigSetting configSetting, JsonObject jsonConfig) {
+        // check hash general config
+        if (!jsonConfig.containsKey("general")) {
+            return;
+        }
+
+        JsonArray arrConfigGeneral = jsonConfig.getJsonArray("general");
+        for (int i = 0; i < arrConfigGeneral.size(); i++) {
+            JsonObject general = arrConfigGeneral.getJsonObject(i);
+
+            String name = general.getString("name");
+            String data = general.getString("data");
+            String format = general.getString("format");
+
+            CellConfig cellConfig = new CellConfig(name, data, format);
+
+            configSetting.getGeneralData().add(cellConfig);
+        }
+    }
+
+    private static void getConfigSettingTable(ConfigSetting configSetting, JsonObject jsonConfig) {
+        // check hash table config
+        if (!jsonConfig.containsKey("table")) {
+            return;
+        }
+
+        JsonArray arrConfigTable = jsonConfig.getJsonArray("table");
+        ArrayList<TableConfig> tableDataList = new ArrayList<>();
+
+        for (int i = 0; i < arrConfigTable.size(); i++) {
+            JsonObject tableObj = arrConfigTable.getJsonObject(i);
+
+            String name = tableObj.getString("name");
+
+            TableConfig tableConfig = new TableConfig();
+            tableConfig.setTableName(name);
+
+            JsonObject rowObj = tableObj.getJsonObject("row");
+            RowConfig rowConfig = getConfigSettingRow(rowObj);
+
+            tableConfig.setRowConfig(rowConfig);
+            tableDataList.add(tableConfig);
+        }
+
+        configSetting.setTableConfigs(tableDataList);
+    }
+
+    private static RowConfig getConfigSettingRow(JsonObject rowObj) {
+        String range = rowObj.getString("range");
+        int begin = Integer.parseInt(range.split("\\|")[0]);
+        int end = Integer.parseInt(range.split("\\|")[1]);
+        String indexRow = rowObj.getString("index");
+
+        RowConfig rowConfig = new RowConfig(indexRow, begin, end);
+
+        JsonArray colObj = rowObj.getJsonArray("column");
+        for (int j = 0; j < colObj.size(); j++) {
+            JsonObject colObjObj = colObj.getJsonObject(j);
+
+            String colName = colObjObj.getString("name");
+            String colData = colObjObj.getString("data");
+            String colFormat = colObjObj.getString("format");
+
+            CellConfig cellConfig = new CellConfig(colName, colData, colFormat);
+
+            rowConfig.getMapCellConfig().add(cellConfig);
+        }
+
+        // Check deep table
+        if (rowObj.containsKey("row")) {
+            JsonObject childRowObj = rowObj.getJsonObject("row");
+            RowConfig childRowConfig = getConfigSettingRow(childRowObj);
+
+            rowConfig.setRowChildConfig(childRowConfig);
+        }
+
+        return rowConfig;
     }
 
     private static void removeAllComment(XWPFDocument doc) {
@@ -151,18 +229,14 @@ public class MainDocx {
         }
     }
 
-    private static void fillDataGeneral(XWPFDocument doc, JsonObject data, JsonObject configSetting) throws Exception {
-        if (configSetting.getJsonArray("general") == null) {
-            return;
-        }
-
+    private static void fillDataGeneral(XWPFDocument doc, JsonObject data, ConfigSetting configSetting) {
         // get list config general field
-        JsonArray listFields = configSetting.getJsonArray("general");
-        for (Object jsonObject: listFields) {
+        ArrayList<CellConfig> listCell = configSetting.getGeneralData();
+        for (CellConfig cellConfig: listCell) {
 
-            String nameData = ((JsonObject) jsonObject).getString("name");
-            String colData = ((JsonObject) jsonObject).getString("data");
-            String format = ((JsonObject) jsonObject).getString("format");
+            String nameData = cellConfig.getName();
+            String colData = cellConfig.getData();
+            String format = cellConfig.getFormat();
 
             if (colData == null || colData.isEmpty()) {
                 colData = nameData;
@@ -181,11 +255,6 @@ public class MainDocx {
 
             List<XWPFTable> tables = doc.getTables();
             for (XWPFTable table : tables) {
-                // get name table from config
-//                if (table.getText().contains("<#TBG>")) {
-//                    continue;
-//                }
-
                 for (XWPFTableRow row : table.getRows()) {
                     for (XWPFTableCell cell : row.getTableCells()) {
                         for (XWPFParagraph paragraph : cell.getParagraphs()) {
@@ -223,69 +292,69 @@ public class MainDocx {
         }
     }
 
-    private static void fillDataTable(XWPFDocument doc, HashMap<String, TableData> data, JsonObject configSetting) throws Exception {
-        if (configSetting.getJsonObject("table") == null) {
-            return;
-        }
-
-        List<XWPFTable> tables = doc.getTables();
-        int indexTable = 0;
-        for (XWPFTable table : tables) {
-            // get name table from config
-            if (!table.getText().contains("<#TBG>")) {
-                continue;
-            }
-
-            int indexTableConfig = 0;
-            String nameTable = "";
-            JsonObject configTable = new JsonObject();
-            for (Map.Entry<String, Object> tableConfig: configSetting.getJsonObject("table")) {
-                nameTable = tableConfig.getKey();
-                configTable = (JsonObject) tableConfig.getValue();
-                if (indexTableConfig == indexTable) {
-                    break;
-                }
-                indexTableConfig++;
-            }
-            indexTable++;
-
-            // get data
-            TableData tableData = data.get(nameTable);
-            if (tableData == null) {
-                continue;
-            }
-
-            int indexRowData = 0;
-            for (JsonObject rowData: tableData.getRows()) {
-                int startIndexTable = configTable.getInteger("start");
-                XWPFTableRow row = table.getRow(startIndexTable);
-
-                JsonArray columnConfig = configTable.getJsonArray("column");
-                int indexCell = 0;
-                for (XWPFTableCell cell: row.getTableCells()) {
-                    List<XWPFParagraph> paragraphs = cell.getParagraphs();
-
-                    for (XWPFParagraph paragraph: paragraphs) {
-                        while (!paragraph.runsIsEmpty()) {
-                            paragraph.removeRun(0);
-                        }
-                    }
-
-                    JsonObject dataNameColumn = columnConfig.getJsonObject(indexCell);
-
-                    String valueField = rowData.getString(dataNameColumn.getString("name"));
-                    String format = dataNameColumn.getString("format");
-                    cell.setText(formatField(valueField, format));
-                    indexCell++;
-                }
-
-                table.addRow(row, configTable.getInteger("start") + indexRowData);
-                indexRowData++;
-            }
-
-            table.removeRow(configTable.getInteger("start"));
-        }
-    }
+//    private static void fillDataTable(XWPFDocument doc, HashMap<String, TableData> data, JsonObject configSetting) throws Exception {
+//        if (configSetting.getJsonObject("table") == null) {
+//            return;
+//        }
+//
+//        List<XWPFTable> tables = doc.getTables();
+//        int indexTable = 0;
+//        for (XWPFTable table : tables) {
+//            // get name table from config
+//            if (!table.getText().contains("<#TBG>")) {
+//                continue;
+//            }
+//
+//            int indexTableConfig = 0;
+//            String nameTable = "";
+//            JsonObject configTable = new JsonObject();
+//            for (Map.Entry<String, Object> tableConfig: configSetting.getJsonObject("table")) {
+//                nameTable = tableConfig.getKey();
+//                configTable = (JsonObject) tableConfig.getValue();
+//                if (indexTableConfig == indexTable) {
+//                    break;
+//                }
+//                indexTableConfig++;
+//            }
+//            indexTable++;
+//
+//            // get data
+//            TableData tableData = data.get(nameTable);
+//            if (tableData == null) {
+//                continue;
+//            }
+//
+//            int indexRowData = 0;
+//            for (JsonObject rowData: tableData.getRows()) {
+//                int startIndexTable = configTable.getInteger("start");
+//                XWPFTableRow row = table.getRow(startIndexTable);
+//
+//                JsonArray columnConfig = configTable.getJsonArray("column");
+//                int indexCell = 0;
+//                for (XWPFTableCell cell: row.getTableCells()) {
+//                    List<XWPFParagraph> paragraphs = cell.getParagraphs();
+//
+//                    for (XWPFParagraph paragraph: paragraphs) {
+//                        while (!paragraph.runsIsEmpty()) {
+//                            paragraph.removeRun(0);
+//                        }
+//                    }
+//
+//                    JsonObject dataNameColumn = columnConfig.getJsonObject(indexCell);
+//
+//                    String valueField = rowData.getString(dataNameColumn.getString("name"));
+//                    String format = dataNameColumn.getString("format");
+//                    cell.setText(formatField(valueField, format));
+//                    indexCell++;
+//                }
+//
+//                table.addRow(row, configTable.getInteger("start") + indexRowData + 1);
+//                indexRowData++;
+//            }
+//
+//            table.removeRow(configTable.getInteger("start"));
+//        }
+//    }
 
     private static String formatField(String value, String format) {
         String result = "";

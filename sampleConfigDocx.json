@@ -24,37 +24,92 @@
       "format": "number_char_en"
     }
   ],
-  "table": {
-    "TABLE_GENERATE_0": {
+  "table": [
+    {
       "name": "TABLE_GENERATE_0",
-      "index": "ROW_NUM",
-      "start": 2,
-      "column": [
-        {
-          "name": "ROW_NUM",
-          "format": "number"
-        },
-        {
-          "name": "INFO",
-          "format": "string"
-        },
-        {
-          "name": "NUM_MEMBER",
-          "format": "string"
-        },
-        {
-          "name": "NUM_IN",
-          "format": "number"
-        },
-        {
-          "name": "NUM_OUT",
-          "format": "number"
-        },
-        {
-          "name": "NUM_TOTAL",
-          "format": "number"
+      "row": {
+        "index": "GROUP",
+        "range": "2|4",
+        "column": [
+          {
+            "name": "GROUP",
+            "format": "string"
+          }
+        ],
+        "row": {
+          "index": "ROW_NUM",
+          "range": "3|3",
+          "column": [
+            {
+              "name": "ROW_NUM",
+              "format": "number"
+            },
+            {
+              "name": "INFO",
+              "format": "string"
+            },
+            {
+              "name": "NUM_MEMBER",
+              "format": "string"
+            },
+            {
+              "name": "NUM_IN",
+              "format": "number"
+            },
+            {
+              "name": "NUM_OUT",
+              "format": "number"
+            },
+            {
+              "name": "NUM_TOTAL",
+              "format": "number"
+            }
+          ]
         }
-      ]
+      }
+    },
+    {
+      "name": "TABLE_GENERATE_1",
+      "row": {
+        "index": "GROUP",
+        "range": "2|4",
+        "column": [
+          {
+            "name": "GROUP",
+            "format": "string"
+          }
+        ],
+        "row": {
+          "index": "ROW_NUM",
+          "range": "3|3",
+          "column": [
+            {
+              "name": "ROW_NUM",
+              "format": "number"
+            },
+            {
+              "name": "INFO",
+              "format": "string"
+            },
+            {
+              "name": "NUM_MEMBER",
+              "format": "string"
+            },
+            {
+              "name": "NUM_IN",
+              "format": "number"
+            },
+            {
+              "name": "NUM_OUT",
+              "format": "number"
+            },
+            {
+              "name": "NUM_TOTAL",
+              "format": "number"
+            }
+          ]
+        }
+      }
     }
-  }
+  ]
 }

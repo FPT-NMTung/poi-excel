@@ -8,7 +8,7 @@ import java.util.HashSet;
 public class TableData {
     private String name;
     private HashSet<String> key;
-    private ArrayList<JsonObject> rows;
+    private ArrayList<RowData> rows;
 
     public TableData(String name) {
         this.name = name;
@@ -32,11 +32,11 @@ public class TableData {
         this.key = key;
     }
 
-    public ArrayList<JsonObject> getRows() {
+    public ArrayList<RowData> getRows() {
         return rows;
     }
 
-    public void setRows(ArrayList<JsonObject> rows) {
+    public void setRows(ArrayList<RowData> rows) {
         this.rows = rows;
     }
 }
