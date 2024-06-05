@@ -8,7 +8,9 @@ public class RowData {
     private JsonObject data;
     private ArrayList<RowData> childRow;
 
-    public RowData() {
+    public RowData(JsonObject data) {
+        this.data = data;
+        this.childRow = new ArrayList<>();
     }
 
     public RowData(JsonObject data, ArrayList<RowData> childRow) {

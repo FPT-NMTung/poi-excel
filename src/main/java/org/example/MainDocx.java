@@ -7,13 +7,10 @@ import modelDocx.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xwpf.usermodel.*;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTComments;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTRow;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
+import java.io.*;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.*;
 
@@ -50,14 +47,14 @@ public class MainDocx {
             // Process data
             startTime = System.currentTimeMillis();
             System.out.print("Process data ... ");
-            HashMap<String, TableData> dataProcessed = processData(sourceData, configSetting);
+            ArrayList<TableData> dataProcessed = processData(sourceData, configSetting);
             System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
             // Fill table data
-//            startTime = System.currentTimeMillis();
-//            System.out.print("Fill table data ... ");
-//            fillDataTable(doc, dataProcessed, configSetting);
-//            System.out.println((System.currentTimeMillis() - startTime) + "ms");
+            startTime = System.currentTimeMillis();
+            System.out.print("Fill table data ... ");
+            generateTable(doc, dataProcessed, configSetting);
+            System.out.println((System.currentTimeMillis() - startTime) + "ms");
         }
 
         FileOutputStream fOut = new FileOutputStream("./result.docx");
@@ -67,30 +64,73 @@ public class MainDocx {
         System.out.println("Export done!");
     }
 
-    private static HashMap<String, TableData> processData(JsonArray sourceData, ConfigSetting configSetting) {
-        HashMap<String, TableData> tableDataList = new HashMap<>();
+    private static ArrayList<TableData> processData(JsonArray sourceData, ConfigSetting configSetting) {
+        ArrayList<TableData> tableDataList = new ArrayList<>();
 
         // Get list table from config
-        ArrayList<TableConfig> listTableConfig = configSetting.getTableConfigs();
-        for (TableConfig tableConfig: listTableConfig) {
+        ArrayList<TableConfig> tableConfigList = configSetting.getTableConfigs();
+        for (TableConfig tableConfig: tableConfigList) {
             TableData tableData = new TableData(tableConfig.getTableName());
-            tableDataList.put(tableConfig.getTableName(), tableData);
+            tableDataList.add(tableData);
         }
 
         for (Object rowDataObj: sourceData) {
             JsonObject rowData = (JsonObject) rowDataObj;
             String nameTable = rowData.getString("NAME_TABLE");
 
-            TableData tableData = tableDataList.get(nameTable);
-
-            String indexTable = rowData.getString(configSetting.getJsonObject("table").getJsonObject(nameTable).getString("index"));
-            if (!tableData.getKey().contains(indexTable)) {
-                tableData.getRows().add(rowData);
-                tableData.getKey().add(indexTable);
+            // Find index table config
+            int indexTable = 0;
+            for (int indexTableConfig = 0; indexTableConfig < tableConfigList.size(); indexTableConfig++) {
+                if (tableConfigList.get(indexTableConfig).getTableName().equals(nameTable)) {
+                    indexTable = indexTableConfig;
+                    break;
+                }
             }
+
+            RowConfig rowConfig = tableConfigList.get(indexTable).getRowConfig();
+            ArrayList<RowData> tableData = tableDataList.get(indexTable).getRows();
+
+            processDataRecursive(tableData, rowData, configSetting, rowConfig);
         }
 
         return tableDataList;
+    }
+
+    private static void processDataRecursive(ArrayList<RowData> listRowData, JsonObject rowDataObj, ConfigSetting configSetting, RowConfig rowConfig) {
+        String indexRow = rowConfig.getIndex();
+        String indexValue = rowDataObj.getString(indexRow);
+
+        // check exist value in array row data
+        int iValue = -1;
+        for (int index = 0; index < listRowData.size(); index++) {
+            RowData rowData = listRowData.get(index);
+            if (rowData.getData().getString(indexRow).equals(indexValue)) {
+                iValue = index;
+                break;
+            }
+        }
+
+        if (iValue == -1) {
+            RowData newRowData = new RowData(rowDataObj);
+
+            if (rowConfig.getRowChildConfig() != null) {
+                ArrayList<RowData> newRowDataChild = newRowData.getChildRow();
+                RowConfig rowConfigChild = rowConfig.getRowChildConfig();
+
+                processDataRecursive(newRowDataChild, rowDataObj, configSetting, rowConfigChild);
+            }
+
+            listRowData.add(newRowData);
+        } else {
+            RowData selectedRowData = listRowData.get(iValue);
+
+            if (rowConfig.getRowChildConfig() != null) {
+                ArrayList<RowData> newRowDataChild = selectedRowData.getChildRow();
+                RowConfig rowConfigChild = rowConfig.getRowChildConfig();
+
+                processDataRecursive(newRowDataChild, rowDataObj, configSetting, rowConfigChild);
+            }
+        }
     }
 
     private static ConfigSetting getConfigSetting(XWPFDocument doc) throws Exception {
@@ -292,69 +332,129 @@ public class MainDocx {
         }
     }
 
-//    private static void fillDataTable(XWPFDocument doc, HashMap<String, TableData> data, JsonObject configSetting) throws Exception {
-//        if (configSetting.getJsonObject("table") == null) {
-//            return;
-//        }
-//
-//        List<XWPFTable> tables = doc.getTables();
-//        int indexTable = 0;
-//        for (XWPFTable table : tables) {
-//            // get name table from config
-//            if (!table.getText().contains("<#TBG>")) {
-//                continue;
-//            }
-//
-//            int indexTableConfig = 0;
-//            String nameTable = "";
-//            JsonObject configTable = new JsonObject();
-//            for (Map.Entry<String, Object> tableConfig: configSetting.getJsonObject("table")) {
-//                nameTable = tableConfig.getKey();
-//                configTable = (JsonObject) tableConfig.getValue();
-//                if (indexTableConfig == indexTable) {
-//                    break;
-//                }
-//                indexTableConfig++;
-//            }
-//            indexTable++;
-//
-//            // get data
-//            TableData tableData = data.get(nameTable);
-//            if (tableData == null) {
-//                continue;
-//            }
-//
-//            int indexRowData = 0;
-//            for (JsonObject rowData: tableData.getRows()) {
-//                int startIndexTable = configTable.getInteger("start");
-//                XWPFTableRow row = table.getRow(startIndexTable);
-//
-//                JsonArray columnConfig = configTable.getJsonArray("column");
-//                int indexCell = 0;
-//                for (XWPFTableCell cell: row.getTableCells()) {
-//                    List<XWPFParagraph> paragraphs = cell.getParagraphs();
-//
-//                    for (XWPFParagraph paragraph: paragraphs) {
-//                        while (!paragraph.runsIsEmpty()) {
-//                            paragraph.removeRun(0);
-//                        }
-//                    }
-//
-//                    JsonObject dataNameColumn = columnConfig.getJsonObject(indexCell);
-//
-//                    String valueField = rowData.getString(dataNameColumn.getString("name"));
-//                    String format = dataNameColumn.getString("format");
-//                    cell.setText(formatField(valueField, format));
-//                    indexCell++;
-//                }
-//
-//                table.addRow(row, configTable.getInteger("start") + indexRowData + 1);
-//                indexRowData++;
-//            }
-//
-//            table.removeRow(configTable.getInteger("start"));
-//        }
-//    }
+    private static void generateTable(XWPFDocument doc, ArrayList<TableData> listTableData, ConfigSetting configSetting) throws Exception {
+        List<XWPFTable> tables = doc.getTables();
+
+        int indexTableDoc = 0;
+        for (XWPFTable table : tables) {
+            // get name table from config
+            if (!table.getText().contains("<#TBG>")) {
+                continue;
+            }
+
+            TableConfig tableConfig = configSetting.getTableConfigs().get(indexTableDoc);
+            RowConfig rowConfig = tableConfig.getRowConfig();
+            ArrayList<RowData> listRowData = listTableData.get(indexTableDoc).getRows();
+
+            // fill data
+            generateTableRowTable(doc, table, rowConfig.getEndRow() + 1, listRowData, rowConfig);
+
+            // remove template row
+            for (int cursorRowIndex = rowConfig.getStartRow(); cursorRowIndex <= rowConfig.getEndRow(); cursorRowIndex++) {
+                table.removeRow(rowConfig.getStartRow());
+            }
+
+            // remove template <#TBG>
+            table.removeRow(table.getRows().size() - 1);
+
+            indexTableDoc++;
+        }
+    }
+
+    private static void test(XWPFDocument doc) throws Exception {
+        FileOutputStream fOut = new FileOutputStream("./test.docx");
+        doc.write(fOut);
+        fOut.close();
+    }
+
+    private static int generateTableRowTable(XWPFDocument doc, XWPFTable table, int startIndexRow, ArrayList<RowData> listRowData, RowConfig rowConfig) throws Exception {
+        int totalAppend = 0;
+
+        if (rowConfig.getRowChildConfig() == null) {
+            for (RowData rowData : listRowData) {
+                // copy row from template to table
+                for (int cursorRow = rowConfig.getStartRow(); cursorRow <= rowConfig.getEndRow(); cursorRow++) {
+                    XWPFTableRow selectedRow = table.getRow(cursorRow);
+                    XWPFTableRow copiedRow = new XWPFTableRow((CTRow) selectedRow.getCtRow().copy(), table);
+                    int newPos = totalAppend + startIndexRow;
+
+                    // loop for fill data
+                    for (CellConfig cellConfig: rowConfig.getMapCellConfig()) {
+                        String nameCell = cellConfig.getName();
+                        String valueCell = rowData.getData().getValue(cellConfig.getData()).toString();
+                        String formatValueCell = formatField(valueCell, cellConfig.getFormat());
+
+                        for (XWPFTableCell cell: copiedRow.getTableCells()) {
+                            for (XWPFParagraph cellParagraph: cell.getParagraphs()) {
+                                fillDataToParagraph(cellParagraph, "<#table." + nameCell + ">", formatValueCell);
+                            }
+                        }
+                    }
+
+                    table.addRow(copiedRow, newPos);
+
+                    totalAppend++;
+                }
+            }
+        } else {
+            for (RowData rowData : listRowData) {
+                // copy row from template to table
+                for (int cursorRow = rowConfig.getStartRow(); cursorRow <= rowConfig.getRowChildConfig().getStartRow() - 1; cursorRow++) {
+                    XWPFTableRow selectedRow = table.getRow(cursorRow);
+                    XWPFTableRow copiedRow = new XWPFTableRow((CTRow) selectedRow.getCtRow().copy(), table);
+                    int newPos = totalAppend + startIndexRow;
+
+                    // loop for fill data
+                    for (CellConfig cellConfig: rowConfig.getMapCellConfig()) {
+                        String nameCell = cellConfig.getName();
+                        String valueCell = rowData.getData().getValue(cellConfig.getData()).toString();
+                        String formatValueCell = formatField(valueCell, cellConfig.getFormat());
+
+                        for (XWPFTableCell cell: copiedRow.getTableCells()) {
+                            for (XWPFParagraph cellParagraph: cell.getParagraphs()) {
+                                fillDataToParagraph(cellParagraph, "<#table." + nameCell + ">", formatValueCell);
+                            }
+                        }
+                    }
+
+                    table.addRow(copiedRow, newPos);
+
+                    totalAppend++;
+                }
+
+                test(doc);
+
+                RowConfig childRowConfig = rowConfig.getRowChildConfig();
+                ArrayList<RowData> listRowDataChild = rowData.getChildRow();
+                totalAppend += generateTableRowTable(doc, table, totalAppend + startIndexRow, listRowDataChild, childRowConfig);
+
+                for (int cursorRow = rowConfig.getRowChildConfig().getEndRow() + 1; cursorRow <= rowConfig.getEndRow(); cursorRow++) {
+                    XWPFTableRow selectedRow = table.getRow(cursorRow);
+                    XWPFTableRow copiedRow = new XWPFTableRow((CTRow) selectedRow.getCtRow().copy(), table);
+                    int newPos = totalAppend + startIndexRow;
+
+                    // loop for fill data
+                    for (CellConfig cellConfig: rowConfig.getMapCellConfig()) {
+                        String nameCell = cellConfig.getName();
+                        String valueCell = rowData.getData().getValue(cellConfig.getData()).toString();
+                        String formatValueCell = formatField(valueCell, cellConfig.getFormat());
+
+                        for (XWPFTableCell cell: copiedRow.getTableCells()) {
+                            for (XWPFParagraph cellParagraph: cell.getParagraphs()) {
+                                fillDataToParagraph(cellParagraph, "<#table." + nameCell + ">", formatValueCell);
+                            }
+                        }
+                    }
+
+                    table.addRow(copiedRow, newPos);
+
+                    totalAppend++;
+                }
+            }
+        }
+
+        return totalAppend;
+    }
 
     private static String formatField(String value, String format) {
         String result = "";
@@ -385,10 +485,30 @@ public class MainDocx {
                 break;
             case "number_char_vi":
                 bd = new BigDecimal(value);
-                result = Converter.numberToCharVi(bd.stripTrailingZeros().toPlainString());
+                result = Converter.numberToCharVi(bd.stripTrailingZeros().toPlainString()).trim();
+                break;
+            case "number_char_Vi":
+                bd = new BigDecimal(value);
+                result = Converter.numberToCharVi(bd.stripTrailingZeros().toPlainString()).trim();
+                if (result.length() >= 1) {
+                    result = result.substring(0, 1).toUpperCase() + result.substring(1);
+                }
+                break;
+            case "number_char_VI":
+                bd = new BigDecimal(value);
+                result = Converter.numberToCharVi(bd.stripTrailingZeros().toPlainString()).trim().toUpperCase();
                 break;
             case "number_char_en":
-                result = Converter.numberToCharEn(value);
+                result = Converter.numberToCharEn(value).trim();
+                break;
+            case "number_char_En":
+                result = Converter.numberToCharEn(value).trim();
+                if (result.length() >= 1) {
+                    result = result.substring(0, 1).toUpperCase() + result.substring(1);
+                }
+                break;
+            case "number_char_EN":
+                result = Converter.numberToCharEn(value).trim().toUpperCase();
                 break;
             default:
                 result = value;

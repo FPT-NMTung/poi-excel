@@ -9,7 +9,8 @@
     "NUM_MEMBER": "066",
     "NUM_IN": 1542,
     "NUM_OUT": 42,
-    "NUM_TOTAL": 1584
+    "NUM_TOTAL": 1584,
+    "GROUP": "1111111"
   },
   {
     "NAME_TABLE": "TABLE_GENERATE_0",
@@ -21,7 +22,8 @@
     "NUM_MEMBER": "066",
     "NUM_IN": 1542,
     "NUM_OUT": 42,
-    "NUM_TOTAL": 1584
+    "NUM_TOTAL": 1584,
+    "GROUP": "1111111"
   },
   {
     "NAME_TABLE": "TABLE_GENERATE_0",
@@ -33,7 +35,8 @@
     "NUM_MEMBER": "066",
     "NUM_IN": 1542,
     "NUM_OUT": 42,
-    "NUM_TOTAL": 1584
+    "NUM_TOTAL": 1584,
+    "GROUP": "22222222"
   },
   {
     "NAME_TABLE": "TABLE_GENERATE_0",
@@ -45,6 +48,59 @@
     "NUM_MEMBER": "066",
     "NUM_IN": 1542,
     "NUM_OUT": 42,
-    "NUM_TOTAL": 1584
+    "NUM_TOTAL": 1584,
+    "GROUP": "22222222"
+  },
+  {
+    "NAME_TABLE": "TABLE_GENERATE_1",
+    "ROW_NUM": 1,
+    "GENERAL_BOND_CODE": "IB1406-01",
+    "GENERAL_BOND_NAME": "IB1406-01-TEST THU PHI",
+    "GENERAL_BOND_PRICE": 152169,
+    "INFO": "Số lượng trái phiếu còn lại",
+    "NUM_MEMBER": "066",
+    "NUM_IN": 1542,
+    "NUM_OUT": 42,
+    "NUM_TOTAL": 1584,
+    "GROUP": "1111111"
+  },
+  {
+    "NAME_TABLE": "TABLE_GENERATE_1",
+    "ROW_NUM": 2,
+    "GENERAL_BOND_CODE": "IB1406-01",
+    "GENERAL_BOND_NAME": "IB1406-01-TEST THU PHI",
+    "GENERAL_BOND_PRICE": 152169,
+    "INFO": "Số lượng trái phiếu được quyền bán lại",
+    "NUM_MEMBER": "066",
+    "NUM_IN": 1542,
+    "NUM_OUT": 42,
+    "NUM_TOTAL": 1584,
+    "GROUP": "1111111"
+  },
+  {
+    "NAME_TABLE": "TABLE_GENERATE_1",
+    "ROW_NUM": 3,
+    "GENERAL_BOND_CODE": "IB1406-01",
+    "GENERAL_BOND_NAME": "IB1406-01-TEST THU PHI",
+    "GENERAL_BOND_PRICE": 152169,
+    "INFO": "Số lượng trái phiếu đăng ký bán lại",
+    "NUM_MEMBER": "066",
+    "NUM_IN": 1542,
+    "NUM_OUT": 42,
+    "NUM_TOTAL": 1584,
+    "GROUP": "22222222"
+  },
+  {
+    "NAME_TABLE": "TABLE_GENERATE_1",
+    "ROW_NUM": 4,
+    "GENERAL_BOND_CODE": "IB1406-01",
+    "GENERAL_BOND_NAME": "IB1406-01-TEST THU PHI",
+    "GENERAL_BOND_PRICE": 152169,
+    "INFO": "Số lượng trái phiếu sở hữu",
+    "NUM_MEMBER": "066",
+    "NUM_IN": 1542,
+    "NUM_OUT": 42,
+    "NUM_TOTAL": 1584,
+    "GROUP": "22222222"
   }
 ]

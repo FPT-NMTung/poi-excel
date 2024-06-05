@@ -7,12 +7,10 @@ import java.util.HashSet;
 
 public class TableData {
     private String name;
-    private HashSet<String> key;
     private ArrayList<RowData> rows;
 
     public TableData(String name) {
         this.name = name;
-        this.key = new HashSet<>();
         this.rows = new ArrayList<>();
     }
 
@@ -22,14 +20,6 @@ public class TableData {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public HashSet<String> getKey() {
-        return key;
-    }
-
-    public void setKey(HashSet<String> key) {
-        this.key = key;
     }
 
     public ArrayList<RowData> getRows() {

@@ -11,6 +11,7 @@ public class RowConfig {
     private ArrayList<CellConfig> mapCellConfig;
 
     public RowConfig(String index, int startRow, int endRow) {
+        this.index = index;
         this.startRow = startRow;
         this.endRow = endRow;
         this.mapCellConfig =  new ArrayList<>();

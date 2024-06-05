@@ -16,63 +16,53 @@
     {
       "name": "GENERAL_BOND_PRICE_VI",
       "data": "GENERAL_BOND_PRICE",
-      "format": "number_char_vi"
+      "format": "number_char_Vi"
     },
     {
       "name": "GENERAL_BOND_PRICE_EN",
       "data": "GENERAL_BOND_PRICE",
-      "format": "number_char_en"
+      "format": "number_char_En"
     }
   ],
   "table": [
     {
       "name": "TABLE_GENERATE_0",
       "row": {
-        "index": "GROUP",
-        "range": "2|4",
+        "index": "ROW_NUM",
+        "range": "2|2",
         "column": [
           {
-            "name": "GROUP",
+            "name": "ROW_NUM",
+            "format": "number"
+          },
+          {
+            "name": "INFO",
             "format": "string"
+          },
+          {
+            "name": "NUM_MEMBER",
+            "format": "string"
+          },
+          {
+            "name": "NUM_IN",
+            "format": "number"
+          },
+          {
+            "name": "NUM_OUT",
+            "format": "number"
+          },
+          {
+            "name": "NUM_TOTAL",
+            "format": "number"
           }
-        ],
-        "row": {
-          "index": "ROW_NUM",
-          "range": "3|3",
-          "column": [
-            {
-              "name": "ROW_NUM",
-              "format": "number"
-            },
-            {
-              "name": "INFO",
-              "format": "string"
-            },
-            {
-              "name": "NUM_MEMBER",
-              "format": "string"
-            },
-            {
-              "name": "NUM_IN",
-              "format": "number"
-            },
-            {
-              "name": "NUM_OUT",
-              "format": "number"
-            },
-            {
-              "name": "NUM_TOTAL",
-              "format": "number"
-            }
-          ]
-        }
+        ]
       }
     },
     {
       "name": "TABLE_GENERATE_1",
       "row": {
         "index": "GROUP",
-        "range": "2|4",
+        "range": "2|3",
         "column": [
           {
             "name": "GROUP",
