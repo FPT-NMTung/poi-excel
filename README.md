@@ -42,19 +42,23 @@ Tạo một comment vào nội dung bất kì trên file, có chứa nội dung 
       "format": "number_char_vi"
     }
   ],
-  "table": {
-    "TABLE_GENERATE_0": {
+  "table": [
+    {
       "name": "TABLE_GENERATE_0",
-      "index": "ROW_NUM",
-      "start": 1,
-      "column": [
-        {
-          "name": "ROW_NUM",
-          "format": "number"
-        }
-      ]
+      "row": {
+        "index": "ROW_NUM",
+        "range": "2|2",
+        "column": [
+          {
+            "name": "ROW_NUM",
+            "data": "ROW_NUM",
+            "format": "number"
+          }
+        ],
+        "row": {}
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -63,17 +67,19 @@ Tạo một comment vào nội dung bất kì trên file, có chứa nội dung 
   * `data`: Data của dữ liệu tương ứng.
   * `format`: Có 4 dạng format sẽ đề cập bên dưới.
 
-* Thuộc tính `table` là danh sách các bảng lưu theo object để dàng truy xuất dữ liệu. Có key của object là tên của bảng, tên này cần phải trùng với thông tin trong data với trường thông tin là `NAME_TABLE`
-  * `name`: Tên của bảng.
-  * `index`: Thông tin duy nhất của từng dòng dữ liệu trong bảng.
-  * `start`: Nơi bắt đầu fill thông tin và cũng là dòng chứa mẫu của bảng cần fill.
-  * `column`: Danh sách config data các cột của bảng, **Tương tự như general nhưng không cần thuộc tính** `data`
+* Thuộc tính `table` là danh sách các bảng lưu.
+  * `name`: Tên của bảng, tên này cần phải trùng với thông tin trong data với trường thông tin là `NAME_TABLE`.
+  * `row`: Config của dòng trong bảng
+    * `index`: Thông tin duy nhất theo từng dòng.
+    * `range`: Khoảng của dòng (bắt đầu | kết thúc)
+    * `column`: Config của từng cột trong dòng.
+    * `row`: Đây là config của deep table
  
 Xem mẫu file [tại đây](./sampleConfigDocx.json).
 
-Để dánh dấu những bảng nào cần fill dữ liệu, điền `<#TBG>` vào dòng template của bảng, cột nào không quan trọng. VD như sau:
+Để dánh dấu những bảng nào cần fill dữ liệu, tạo thêm một dòng dưới cùng của bảng và điền `<#TBG>` vào, cột nào không quan trọng. VD như sau:
 
-![image](https://github.com/FPT-NMTung/poi-excel/assets/63092029/86714e90-f991-4e5c-a04e-fcd25fac7cf5)
+![image](https://github.com/FPT-NMTung/poi-excel/assets/63092029/f8a89556-da47-44e0-8af5-3e3fbf3692b9)
 
 ### Format code
 
@@ -82,7 +88,11 @@ Xem mẫu file [tại đây](./sampleConfigDocx.json).
 |`number`|123456.098|123,456.089|
 |`string`|123456.098|123456.098|
 |`number_char_vi`|123456|một trăm hai mươi ba nghìn bốn trăm năm mươi sáu|
+|`number_char_Vi`|123456|Một trăm hai mươi ba nghìn bốn trăm năm mươi sáu|
+|`number_char_VI`|123456|MỘT TRĂM HAI MƯƠI BA NGHÌN BỐN TRĂM NĂM MƯƠI SÁU|
 |`number_char_en`|123456|one hundred twenty-three thousand four hundred fifty-six|
+|`number_char_En`|123456|One hundred twenty-three thousand four hundred fifty-six|
+|`number_char_EN`|123456|ONE HUNDRED TWENTY-THREE THOUSAND FOUR HUNDRED FIFTY-SIX|
 
 ### Performance
 ![image](https://github.com/FPT-NMTung/poi-excel/assets/63092029/b081e0ce-3c94-41cd-a799-5ca3b7e7fca4)
