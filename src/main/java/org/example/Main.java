@@ -44,7 +44,7 @@ public class Main {
             SheetConfig sheetConfig = configSetting.getSheets().get(indexSheet);
 
             // Get JSON data
-            String jsonStr = IOUtils.toString(new FileReader("./testData.json"));
+            String jsonStr = IOUtils.toString(new FileReader("./testDataSimple.json"));
             JsonArray sourceData = new JsonArray(jsonStr);
 
             // Process data
