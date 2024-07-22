@@ -1,32 +1,22 @@
 package model;
 
+import java.util.ArrayList;
+
 public class ConfigSetting {
-    private int totalGroup;
     private boolean isHasGeneralData;
     private boolean isMergeCell;
-    private Range[] arrRange;
+    private boolean isMultipleSheet;
+    private ArrayList<SheetConfig> sheets;
 
-    public ConfigSetting(int totalGroup, boolean isHasGeneralData, boolean isMergeCell) {
-        this.totalGroup = totalGroup;
-        this.arrRange = new Range[totalGroup];
-        this.isHasGeneralData = isHasGeneralData;
-        this.isMergeCell = isMergeCell;
+    public ConfigSetting() {
     }
 
-    public int getTotalGroup() {
-        return totalGroup;
+    public ArrayList<SheetConfig> getSheets() {
+        return sheets;
     }
 
-    public void setTotalGroup(int totalGroup) {
-        this.totalGroup = totalGroup;
-    }
-
-    public Range[] getArrRange() {
-        return arrRange;
-    }
-
-    public void setArrRange(Range[] arrRange) {
-        this.arrRange = arrRange;
+    public void setSheets(ArrayList<SheetConfig> sheets) {
+        this.sheets = sheets;
     }
 
     public boolean isHasGeneralData() {
@@ -43,5 +33,13 @@ public class ConfigSetting {
 
     public void setMergeCell(boolean mergeCell) {
         isMergeCell = mergeCell;
+    }
+
+    public boolean isMultipleSheet() {
+        return isMultipleSheet;
+    }
+
+    public void setMultipleSheet(boolean multipleSheet) {
+        isMultipleSheet = multipleSheet;
     }
 }
