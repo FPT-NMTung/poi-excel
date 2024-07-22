@@ -16,10 +16,12 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static converter.ExcelToPDFConverter.convertExcelToPDF;
+
 public class Main {
     public static void main(String[] args) throws Exception {
         // Get file template
-        File templateFile = new File("template.xlsx");
+        File templateFile = new File("GD_07.xlsx");
         if (!templateFile.exists()) {
             throw new Exception("Template file not found");
         }
@@ -43,7 +45,6 @@ public class Main {
         ChildTree childTree = processData(configSetting, sourceData);
         System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
-
         // Generate file
         System.out.println("Start generate data... ");
         generateFile(wb, configSetting, childTree, sourceData);
@@ -55,6 +56,10 @@ public class Main {
         wb.write(fOut);
         fOut.close();
         System.out.println((System.currentTimeMillis() - startTime) + "ms");
+
+        String excelFilePath = "./result.xlsx";
+        String pdfFilePath = "./result.pdf";
+        convertExcelToPDF(excelFilePath, pdfFilePath);
 
         System.out.println("Export done!");
     }
@@ -118,7 +123,12 @@ public class Main {
     private static ChildTree processData (ConfigSetting configSetting, JsonArray sourceData) {
         ChildTree resultData = new ChildTree();
 
-        for (int index = 0; index < sourceData.size(); index++) {
+        int startIndex = 0;
+        if (configSetting.isHasGeneralData()) {
+            startIndex = 1;
+        }
+
+        for (int index = startIndex; index < sourceData.size(); index++) {
             JsonObject itemData = sourceData.getJsonObject(index);
 
             processDataRecursive(index, resultData, itemData, 0, configSetting);
@@ -147,6 +157,7 @@ public class Main {
             StringBuilder keyString = new StringBuilder();
             JsonObject keyObject = new JsonObject();
             for (String columnDatum : columnData) {
+                System.out.println("columnDatum: " + columnDatum + ", itemData: " + itemData);
                 keyString.append(itemData.getValue(columnDatum).toString());
                 keyObject.put(columnDatum, itemData.getValue(columnDatum).toString());
             }
@@ -209,15 +220,20 @@ public class Main {
         System.out.print("\tMove footer... ");
         startTime = System.currentTimeMillis();
         int heightTable = calculateTotalTableHeightRecursive(configSetting, jsonArrData, 0);
-        sheet.shiftRows(new CellAddress(configSetting.getArrRange()[0].getEnd()).getRow() + 1, sheet.getLastRowNum(), heightTable, true, true);
+        if (heightTable > 0) {
+            sheet.shiftRows(new CellAddress(configSetting.getArrRange()[0].getEnd()).getRow() + 1, sheet.getLastRowNum(), heightTable, true, true);
+        }
         System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
         // Init start row
-        System.out.print("\tGenerate... ");
-        startTime = System.currentTimeMillis();
         int startRow = new CellAddress(configSetting.getArrRange()[0].getEnd()).getRow() + 1;
-        int totalAppend = generateFileFromTemplate(0, startRow, jsonArrData, sheet, configSetting);
-        System.out.println((System.currentTimeMillis() - startTime) + "ms");
+        int totalAppend = 0;
+        if (heightTable > 0) {
+            System.out.print("\tGenerate... ");
+            startTime = System.currentTimeMillis();
+            totalAppend = generateFileFromTemplate(0, startRow, jsonArrData, sheet, configSetting);
+            System.out.println((System.currentTimeMillis() - startTime) + "ms");
+        }
 
         // remove range template
         System.out.print("\tRemove template... ");
@@ -240,7 +256,7 @@ public class Main {
         }
 
         // Merge cell
-        if (configSetting.isMergeCell()) {
+        if (configSetting.isMergeCell() && totalAppend > 0) {
             startTime = System.currentTimeMillis();
             System.out.print("\tMerge cell... ");
             System.out.println((System.currentTimeMillis() - startTime) + "ms");
@@ -458,6 +474,10 @@ public class Main {
         int heightTemplateLevel = configSetting.getArrRange()[level].getHeightRange();
         if (level + 1 < configSetting.getTotalGroup()) {
             heightTemplateLevel -= configSetting.getArrRange()[level + 1].getHeightRange();
+        }
+
+        if (data.getData() == null) {
+            return 0;
         }
 
         int sizeObject = data.getData().size();

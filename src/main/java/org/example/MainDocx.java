@@ -17,7 +17,7 @@ import java.util.*;
 public class MainDocx {
     public static void main(String[] args) throws Exception {
         // Read template
-        File templateFile = new File("Mau 33C-THQ.docx");
+        File templateFile = new File("GD_10.docx");
         if (!templateFile.exists()) {
             throw new Exception("Template file not found");
         }
