@@ -2,15 +2,20 @@ package model;
 
 import org.apache.poi.ss.util.CellAddress;
 
+import java.util.ArrayList;
+
 public class Range {
     private String begin;
     private String end;
     private String[] columnData;
+    private ArrayList<Range> childRange;
+    private String indexTableExcel;
 
-    public Range(String begin, String end, String[] columnData) {
+    public Range(String begin, String end, String[] columnData, String indexTableExcel) {
         this.begin = begin;
         this.end = end;
         this.columnData = columnData;
+        this.indexTableExcel = indexTableExcel;
     }
 
     public Range(String begin, String end) {
@@ -48,5 +53,21 @@ public class Range {
 
     public int getHeightRange () {
         return new CellAddress(this.end).getRow() - new CellAddress(this.begin).getRow() + 1;
+    }
+
+    public ArrayList<Range> getChildRange() {
+        return childRange;
+    }
+
+    public void setChildRange(ArrayList<Range> childRange) {
+        this.childRange = childRange;
+    }
+
+    public String getIndexTableExcel() {
+        return indexTableExcel;
+    }
+
+    public void setIndexTableExcel(String indexTableExcel) {
+        this.indexTableExcel = indexTableExcel;
     }
 }
