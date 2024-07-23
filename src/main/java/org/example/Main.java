@@ -21,7 +21,7 @@ import static converter.ExcelToPDFConverter.convertExcelToPDF;
 public class Main {
     public static void main(String[] args) throws Exception {
         // Get file template
-        File templateFile = new File("template-non-multi.xlsx");
+        File templateFile = new File("template-equivalent-tables.xlsx");
 //        File templateFile = new File("GD_07.xlsx");
 
         if (!templateFile.exists()) {
@@ -78,7 +78,7 @@ public class Main {
         convertExcelToPDF(excelFilePath, pdfFilePath);
 
         System.out.println("Export done!");
-        System.out.println("Total time: " + (System.currentTimeMillis() - beginTime) + "!");
+        System.out.println("Total time: " + (System.currentTimeMillis() - beginTime) + "ms!");
     }
 
     private static ConfigSetting getConfigSetting (XSSFWorkbook wb) throws Exception {
@@ -333,7 +333,7 @@ public class Main {
             if (!hasKeyValue) {
                 ItemTree newItemTree = new ItemTree();
 
-                newItemTree.setValue(keyObject);
+                newItemTree.setValue(itemData);
                 newItemTree.setKey(keyString.toString());
                 if (level + 1 < sheetConfig.getTotalGroup()) {
                     ChildTree childTree = new ChildTree();
@@ -545,15 +545,31 @@ public class Main {
 
     private static void removeRangeTemplate (SheetConfig sheetConfig, XSSFSheet sheet) {
         int heightParent = sheetConfig.getArrRange().getFirst().getHeightRange();
-        int rowNum = new CellAddress(sheetConfig.getArrRange().getFirst().getBegin()).getRow();
+        int firstRowNum = new CellAddress(sheetConfig.getArrRange().getFirst().getBegin()).getRow();
+        int lastRowNum = new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getRow();
+        int firstColNum = new CellAddress(sheetConfig.getArrRange().getFirst().getBegin()).getColumn();
+        int lastColNum = new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getColumn();
 
+        // remove data
         for (int index = 0; index < heightParent; index++) {
-            XSSFRow row = sheet.getRow(index + rowNum);
+            XSSFRow row = sheet.getRow(index + firstRowNum);
             sheet.removeRow(row);
         }
 
+        // un-merge cell for shiftRow
+        List<CellRangeAddress> listMergeCell = sheet.getMergedRegions();
+        ArrayList<Integer> listIndexMergeRegions = new ArrayList<>();
+
+        for (int i = 0; i < listMergeCell.size(); i++) {
+            CellRangeAddress cellAddresses = listMergeCell.get(i);
+            if (cellAddresses.getFirstRow() >= firstRowNum && cellAddresses.getLastRow() <= lastRowNum && cellAddresses.getFirstColumn() >= firstColNum && cellAddresses.getLastColumn() <= lastColNum) {
+                listIndexMergeRegions.add(i);
+            }
+        }
+        sheet.removeMergedRegions(listIndexMergeRegions);
+
         int lastRow = sheet.getLastRowNum();
-        sheet.shiftRows(rowNum + heightParent, lastRow, -heightParent, true, true);
+        sheet.shiftRows(firstRowNum + heightParent, lastRow, -heightParent, true, true);
     }
 
     private static void fillData (Range range, JsonObject data, XSSFSheet targetSheet, ConfigSetting configSetting, String regex) throws Exception {
