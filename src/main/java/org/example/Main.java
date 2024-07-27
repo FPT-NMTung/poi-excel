@@ -4,6 +4,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import model.*;
 import org.apache.commons.io.IOUtils;
+import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.xssf.usermodel.*;
 
 import java.io.File;
@@ -47,9 +48,9 @@ public class Main {
             LevelDataTable rootLevelDataTable = processData(sheetConfig, configSetting, sourceData);
             System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
-//            // Generate file
-//            System.out.println("Start generate data... ");
-//            generateFile(wb, targetSheet, configSetting, sheetConfig, childTree, sourceData);
+            // Generate file
+            System.out.println("Start generate data... ");
+            generateFile(wb, targetSheet, configSetting, sheetConfig, rootLevelDataTable, sourceData);
         }
 
 //        // remove config sheet
@@ -225,14 +226,20 @@ public class Main {
         XSSFCell cell = row.getCell(4);
 
         String indexTableExcel = null;
+        String columnIndexTableExcel = null;
         if (cell != null) {
-            indexTableExcel = row.getCell(4).getStringCellValue();
+            String valueIndexTableExcel = row.getCell(4).getStringCellValue();
+
+            if (!valueIndexTableExcel.isBlank()) {
+                indexTableExcel = valueIndexTableExcel.split("\\|")[1];
+                columnIndexTableExcel = valueIndexTableExcel.split("\\|")[0];
+            }
         }
 
         String[] columns = columnData.split(",");
 
         // create range row
-        Range range = new Range(begin, end, columns, indexTableExcel);
+        Range range = new Range(begin, end, columns, indexTableExcel, columnIndexTableExcel);
 
         // get level row
         int targetLevel = Integer.parseInt(nameRow.replace("range_", ""));
@@ -268,6 +275,10 @@ public class Main {
         for (int index = startIndex; index < sourceData.size(); index++) {
             JsonObject itemData = sourceData.getJsonObject(index);
 
+            if (index == 12) {
+                System.out.println("OK!!!");
+            }
+
             processDataRecursive(rootLevelDataTable, itemData, 0, sheetConfig, sheetConfig.getArrRange());
         }
 
@@ -275,13 +286,12 @@ public class Main {
     }
 
     private static void processDataRecursive (LevelDataTable levelDataTable, JsonObject itemData, int level, SheetConfig sheetConfig, ArrayList<Range> currentRangeConfig) {
-        DataTable selectedDataTable = null;
-
         // check range has index table excel
         if (currentRangeConfig.getFirst().getIndexTableExcel() != null && !currentRangeConfig.getFirst().getIndexTableExcel().isEmpty()) {
-            String dataIndexTableExcel = itemData.getString("INDEX_TABLE_EXCEL");
+            String dataIndexTableExcel = itemData.getString(currentRangeConfig.getFirst().getColumnIndexTableExcel());
 
             // Find dataTable with same indexRowTable
+            DataTable selectedDataTable = null;
             for (int index = 0; index < levelDataTable.getDataTables().size(); index++) {
                 if (levelDataTable.getDataTables().get(index).getIndexTableExcel().equals(dataIndexTableExcel)) {
                     selectedDataTable = levelDataTable.getDataTables().get(index);
@@ -291,79 +301,116 @@ public class Main {
 
             // if not exist dataTable => create new
             if (selectedDataTable == null) {
-                DataTable newDataTable = new DataTable();
-                newDataTable.setIndexTableExcel(dataIndexTableExcel);
-
-                selectedDataTable = newDataTable;
+                selectedDataTable = new DataTable();
+                selectedDataTable.setIndexTableExcel(dataIndexTableExcel);
                 levelDataTable.getDataTables().add(selectedDataTable);
             }
-        }
 
-        // if current range config don't had index table excel => have only once element in ArrayList
-        String[] columnData = currentRangeConfig.getFirst().getColumnData();
-
-        // Check and process with no group column => leaf data
-        if (columnData == null || columnData.length == 0 || (columnData.length == 1 && columnData[0].isEmpty())) {
-            ArrayList<DataTable> dataTables = levelDataTable.getDataTables();
-
-            // check if empty list, add new data table
-            if (dataTables.isEmpty()) {
-                DataTable newDataTable = new DataTable();
-                RowData newRowData = new RowData(itemData, null, level);
-
-                newDataTable.getRowData().add(newRowData);
-
-                dataTables.add(new DataTable());
-            } else {
-                // get exist data table and add new row data
-                selectedDataTable = dataTables.getFirst();
-
-                RowData newRowData = new RowData(itemData, null, level);
-
-                selectedDataTable.getRowData().add(newRowData);
-            }
-        } else {
-            ArrayList<DataTable> dataTables = levelDataTable.getDataTables();
-
-            // get key from itemData and currentRangeConfig
-            StringBuilder keyRowData = new StringBuilder();
-            for (String columnItem : columnData) {
-                keyRowData.append(itemData.getValue(columnItem).toString());
-            }
-
-            // check if empty list, add new data table
-            if (dataTables.isEmpty()) {
-                DataTable newDataTable = new DataTable();
-                RowData newRowData = new RowData(itemData, keyRowData.toString(), level);
-
-                newDataTable.addKeyRowData(keyRowData.toString());
-                newDataTable.getRowData().add(newRowData);
-
-                dataTables.add(newDataTable);
-            } else {
-                // get exist data table and add new row data
-                selectedDataTable = dataTables.getFirst();
-
-                // Check exist key
-                if (!selectedDataTable.isExistKeyRowData(keyRowData.toString())) {
-                    selectedDataTable.addKeyRowData(keyRowData.toString());
-
-                    RowData newRowData = new RowData(itemData, keyRowData.toString(), level);
-
-                    selectedDataTable.getRowData().add(newRowData);
+            // Find current range config
+            Range selectedRangeConfig = null;
+            for (int index = 0; index < currentRangeConfig.size(); index++) {
+                if (currentRangeConfig.get(index).getIndexTableExcel().equals(dataIndexTableExcel)) {
+                    selectedRangeConfig = currentRangeConfig.get(index);
                 }
             }
 
-            // prepare param for recursive call
-            selectedDataTable = dataTables.getFirst();
-            LevelDataTable rLevelDataTable = selectedDataTable.getRowDataByKey(keyRowData.toString()).getLevelDataTable();
-            int rLevel = level + 1;
-            ArrayList<Range> rCurrentRangeConfig = currentRangeConfig.getFirst().getChildRange();
+            assert selectedRangeConfig != null;
+            String[] columnData = selectedRangeConfig.getColumnData();
 
-            // recursive call
-            processDataRecursive(rLevelDataTable, itemData, rLevel, sheetConfig, rCurrentRangeConfig);
+            // Check and process with no group column => leaf data
+            if (columnData == null || columnData.length == 0 || (columnData.length == 1 && columnData[0].isEmpty())) {
+                RowData newRowData = new RowData(itemData, null, level);
+
+                selectedDataTable.getRowData().add(newRowData);
+            } else {
+                // get key from itemData and currentRangeConfig
+                StringBuilder keyRowData = new StringBuilder();
+                for (String columnItem : columnData) {
+                    keyRowData.append(itemData.getValue(columnItem).toString());
+                }
+
+                if (!selectedDataTable.isExistKeyRowData(keyRowData.toString())) {
+                    selectedDataTable.addKeyRowData(keyRowData.toString());
+
+                    // Create new rowData
+                    RowData newRowData = new RowData(itemData, keyRowData.toString(), level);
+                    selectedDataTable.getRowData().add(newRowData);
+                }
+
+                // prepare param for recursive call
+                LevelDataTable rLevelDataTable = selectedDataTable.getRowDataByKey(keyRowData.toString()).getLevelDataTable();
+                int rLevel = level + 1;
+                ArrayList<Range> rCurrentRangeConfig = selectedRangeConfig.getChildRange();
+
+                // recursive call
+                processDataRecursive(rLevelDataTable, itemData, rLevel, sheetConfig, rCurrentRangeConfig);
+            }
+        } else {
+            // if current range config don't had index table excel => have only once element in ArrayList
+            String[] columnData = currentRangeConfig.getFirst().getColumnData();
+
+            // Check and process with no group column => leaf data
+            if (columnData == null || columnData.length == 0 || (columnData.length == 1 && columnData[0].isEmpty())) {
+                ArrayList<DataTable> dataTables = levelDataTable.getDataTables();
+
+                // check if empty list, add new data table
+                if (dataTables.isEmpty()) {
+                    DataTable newDataTable = new DataTable();
+                    RowData newRowData = new RowData(itemData, null, level);
+
+                    newDataTable.getRowData().add(newRowData);
+
+                    dataTables.add(newDataTable);
+                } else {
+                    // get exist data table and add new row data
+                    DataTable selectedDataTable = dataTables.getFirst();
+
+                    RowData newRowData = new RowData(itemData, null, level);
+
+                    selectedDataTable.getRowData().add(newRowData);
+                }
+            } else {
+                ArrayList<DataTable> dataTables = levelDataTable.getDataTables();
+
+                // get key from itemData and currentRangeConfig
+                StringBuilder keyRowData = new StringBuilder();
+                for (String columnItem : columnData) {
+                    keyRowData.append(itemData.getValue(columnItem).toString());
+                }
+
+                // check if empty list, add new data table
+                if (dataTables.isEmpty()) {
+                    DataTable newDataTable = new DataTable();
+                    RowData newRowData = new RowData(itemData, keyRowData.toString(), level);
+
+                    newDataTable.addKeyRowData(keyRowData.toString());
+                    newDataTable.getRowData().add(newRowData);
+
+                    dataTables.add(newDataTable);
+                } else {
+                    // get exist data table and add new row data
+                    DataTable selectedDataTable = dataTables.getFirst();
+
+                    // Check exist key
+                    if (!selectedDataTable.isExistKeyRowData(keyRowData.toString())) {
+                        selectedDataTable.addKeyRowData(keyRowData.toString());
+
+                        RowData newRowData = new RowData(itemData, keyRowData.toString(), level);
+
+                        selectedDataTable.getRowData().add(newRowData);
+                    }
+                }
+
+                // prepare param for recursive call
+                DataTable selectedDataTable = dataTables.getFirst();
+                LevelDataTable rLevelDataTable = selectedDataTable.getRowDataByKey(keyRowData.toString()).getLevelDataTable();
+                int rLevel = level + 1;
+                ArrayList<Range> rCurrentRangeConfig = currentRangeConfig.getFirst().getChildRange();
+
+                // recursive call
+                processDataRecursive(rLevelDataTable, itemData, rLevel, sheetConfig, rCurrentRangeConfig);
+            }
         }
-
 
 
 
@@ -436,22 +483,22 @@ public class Main {
 //            listItemTree.add(newItemTree);
 //        }
     }
-//
-//    private static void generateFile (XSSFWorkbook sourceTemplate, XSSFSheet targetSheet, ConfigSetting configSetting, SheetConfig sheetConfig, ChildTree jsonArrData, JsonArray sourceData) throws Exception {
-//        long startTime;
-//
-//        sourceTemplate.setForceFormulaRecalculation(true);
-//        XSSFFormulaEvaluator.evaluateAllFormulaCells(sourceTemplate);
-//
-//        // Move footer
-//        System.out.print("\tMove footer... ");
-//        startTime = System.currentTimeMillis();
-//        int heightTable = calculateTotalTableHeightRecursive(sheetConfig, jsonArrData, 0);
-//        if (heightTable > 0) {
-//            targetSheet.shiftRows(new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getRow() + 1, targetSheet.getLastRowNum(), heightTable, true, true);
-//        }
-//        System.out.println((System.currentTimeMillis() - startTime) + "ms");
-//
+
+    private static void generateFile (XSSFWorkbook sourceTemplate, XSSFSheet targetSheet, ConfigSetting configSetting, SheetConfig sheetConfig, LevelDataTable rootLevelDataTable, JsonArray sourceData) throws Exception {
+        long startTime;
+
+        sourceTemplate.setForceFormulaRecalculation(true);
+        XSSFFormulaEvaluator.evaluateAllFormulaCells(sourceTemplate);
+
+        // Move footer
+        System.out.print("\tMove footer... ");
+        startTime = System.currentTimeMillis();
+        int heightTable = calculateTotalTableHeightRecursive(sheetConfig, rootLevelDataTable, 0);
+        if (heightTable > 0) {
+            targetSheet.shiftRows(new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getRow() + 1, targetSheet.getLastRowNum(), heightTable, true, true);
+        }
+        System.out.println((System.currentTimeMillis() - startTime) + "ms");
+
 //        // Init start row
 //        int startRow = new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getRow() + 1;
 //        int totalAppend = 0;
@@ -483,10 +530,10 @@ public class Main {
 //            System.out.println((System.currentTimeMillis() - startTime) + "ms");
 //            mergeCell(targetSheet);
 //        }
-//
-//        XSSFFormulaEvaluator.evaluateAllFormulaCells(sourceTemplate);
-//    }
-//
+
+        XSSFFormulaEvaluator.evaluateAllFormulaCells(sourceTemplate);
+    }
+
 //    private static int generateFileFromTemplate(int level, int startRow, ChildTree jsonArrData, XSSFSheet targetSheet, ConfigSetting configSetting, SheetConfig sheetConfig) throws Exception {
 //        ArrayList<ItemTree> dataObject = jsonArrData.getData();
 //
@@ -701,34 +748,37 @@ public class Main {
 //            }
 //        }
 //    }
-//
-//    private static int calculateTotalTableHeightRecursive(SheetConfig sheetConfig, ChildTree data, int level) {
-//        int totalHeight = 0;
-//
-//        // Get height only level
-//        int heightTemplateLevel = sheetConfig.getArrRange().get(level).getHeightRange();
-//        if (level + 1 < sheetConfig.getTotalGroup()) {
-//            heightTemplateLevel -= sheetConfig.getArrRange().get(level).getHeightRange();
-//        }
-//
-//        if (data.getData() == null) {
-//            return 0;
-//        }
-//
-//        int sizeObject = data.getData().size();
-//        ArrayList<ItemTree> dataObject = data.getData();
-//
-//        if (level + 1 < sheetConfig.getTotalGroup()) {
-//            for (ItemTree item: dataObject) {
-//                ChildTree childData = item.getChild();
-//
-//                int heightChildLevel = calculateTotalTableHeightRecursive(sheetConfig, childData, level + 1);
-//                totalHeight += heightChildLevel;
-//            }
-//        }
-//
-//        return totalHeight + heightTemplateLevel * sizeObject;
-//    }
+
+    private static int calculateTotalTableHeightRecursive(SheetConfig sheetConfig, LevelDataTable levelDataTable, int level) {
+        int totalHeight = 0;
+
+        // Get height only level
+        int heightTemplateLevel = sheetConfig.getArrRange().get(level).getHeightRange();
+        if (level + 1 < sheetConfig.getTotalGroup()) {
+            heightTemplateLevel -= sheetConfig.getArrRange().get(level).getHeightRange();
+        }
+
+        for () {
+
+        }
+        if (data.getData() == null) {
+            return 0;
+        }
+
+        int sizeObject = data.getData().size();
+        ArrayList<ItemTree> dataObject = data.getData();
+
+        if (level + 1 < sheetConfig.getTotalGroup()) {
+            for (ItemTree item: dataObject) {
+                ChildTree childData = item.getChild();
+
+                int heightChildLevel = calculateTotalTableHeightRecursive(sheetConfig, childData, level + 1);
+                totalHeight += heightChildLevel;
+            }
+        }
+
+        return totalHeight + heightTemplateLevel * sizeObject;
+    }
 //
 //    private static void mergeCell(XSSFSheet sheet) {
 //

@@ -10,12 +10,14 @@ public class Range {
     private String[] columnData;
     private ArrayList<Range> childRange;
     private String indexTableExcel;
+    private String columnIndexTableExcel;
 
-    public Range(String begin, String end, String[] columnData, String indexTableExcel) {
+    public Range(String begin, String end, String[] columnData, String indexTableExcel, String columnIndexTableExcel) {
         this.begin = begin;
         this.end = end;
         this.columnData = columnData;
         this.indexTableExcel = indexTableExcel;
+        this.columnIndexTableExcel = columnIndexTableExcel;
     }
 
     public Range(String begin, String end) {
@@ -69,5 +71,13 @@ public class Range {
 
     public void setIndexTableExcel(String indexTableExcel) {
         this.indexTableExcel = indexTableExcel;
+    }
+
+    public String getColumnIndexTableExcel() {
+        return columnIndexTableExcel;
+    }
+
+    public void setColumnIndexTableExcel(String columnIndexTableExcel) {
+        this.columnIndexTableExcel = columnIndexTableExcel;
     }
 }
