@@ -493,7 +493,7 @@ public class Main {
         // Move footer
         System.out.print("\tMove footer... ");
         startTime = System.currentTimeMillis();
-        int heightTable = calculateTotalTableHeightRecursive(sheetConfig, rootLevelDataTable, 0);
+        int heightTable = calculateTotalTableHeightRecursive(sheetConfig, null, rootLevelDataTable, 0);
         if (heightTable > 0) {
             targetSheet.shiftRows(new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getRow() + 1, targetSheet.getLastRowNum(), heightTable, true, true);
         }
@@ -749,7 +749,7 @@ public class Main {
 //        }
 //    }
 
-    private static int calculateTotalTableHeightRecursive(SheetConfig sheetConfig, LevelDataTable levelDataTable, int level) {
+    private static int calculateTotalTableHeightRecursive(SheetConfig sheetConfig, DataTable parentDataTable, LevelDataTable levelDataTable, int level) {
         int totalHeight = 0;
 
         // Get height only level
@@ -758,8 +758,16 @@ public class Main {
             heightTemplateLevel -= sheetConfig.getArrRange().get(level).getHeightRange();
         }
 
-        for () {
+        int spaceBetweenTopParent = 0;
+        int spaceBetweenBottomParent = 0;
 
+        for (Range rangeConfig: sheetConfig.getArrRange()) {
+            if (level == 0) {
+                spaceBetweenTopParent = 0;
+                spaceBetweenBottomParent = 0;
+            } else {
+                parentDataTable.get
+            }
         }
         if (data.getData() == null) {
             return 0;
