@@ -4,6 +4,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import model.*;
 import org.apache.commons.io.IOUtils;
+import org.apache.poi.ss.usermodel.CellCopyPolicy;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.xssf.usermodel.*;
 
@@ -411,77 +412,6 @@ public class Main {
                 processDataRecursive(rLevelDataTable, itemData, rLevel, sheetConfig, rCurrentRangeConfig);
             }
         }
-
-
-
-
-
-//        // Condition break out recursive
-//        if (level >= sheetConfig.getTotalGroup()) {
-//            return;
-//        }
-//
-//        if (childData.getData() == null) {
-//            childData.setLevel(level);
-//            childData.setData(new ArrayList<>());
-//            childData.setHashSetKey(new HashSet<>());
-//        }
-//
-//        // Get data follow config file
-//        String[] columnData = sheetConfig.getArrRange().get(level).getColumnData();
-//        boolean isColumnDataIsEmpty = sheetConfig.getArrRange().get(level).isColumnDataIsEmpty();
-//
-//        if (!isColumnDataIsEmpty) {
-//            StringBuilder keyString = new StringBuilder();
-//            JsonObject keyObject = new JsonObject();
-//            for (String columnDatum : columnData) {
-//                keyString.append(itemData.getValue(columnDatum).toString());
-//                keyObject.put(columnDatum, itemData.getValue(columnDatum).toString());
-//            }
-//
-//            // Check exist key in result object
-//            ArrayList<ItemTree> listItemTree = childData.getData();
-//            HashSet<String> hashSetKey = childData.getHashSetKey();
-//            boolean hasKeyValue = hashSetKey.contains(keyString.toString());
-//
-//            if (!hasKeyValue) {
-//                ItemTree newItemTree = new ItemTree();
-//
-//                newItemTree.setValue(itemData);
-//                newItemTree.setKey(keyString.toString());
-//                if (level + 1 < sheetConfig.getTotalGroup()) {
-//                    ChildTree childTree = new ChildTree();
-//
-//                    processDataRecursive(indexData, childTree, itemData, level + 1, configSetting, sheetConfig);
-//
-//                    newItemTree.setChild(childTree);
-//                }
-//
-//                hashSetKey.add(keyString.toString());
-//                listItemTree.add(newItemTree);
-//            } else {
-//                if (level + 1 < sheetConfig.getTotalGroup()) {
-//                    ItemTree itemTree = new ItemTree();
-//
-//                    for (ItemTree item: listItemTree) {
-//                        if (Objects.equals(item.getKey(), keyString.toString())) {
-//                            itemTree = item;
-//                            break;
-//                        }
-//                    }
-//
-//                    processDataRecursive(indexData, itemTree.getChild(), itemData, level + 1, configSetting, sheetConfig);
-//                }
-//            }
-//        } else {
-//            ArrayList<ItemTree> listItemTree = childData.getData();
-//
-//            ItemTree newItemTree = new ItemTree();
-//            newItemTree.setValue(itemData);
-//            newItemTree.setKey(String.valueOf(indexData));
-//
-//            listItemTree.add(newItemTree);
-//        }
     }
 
     private static void generateFile (XSSFWorkbook sourceTemplate, XSSFSheet targetSheet, ConfigSetting configSetting, SheetConfig sheetConfig, LevelDataTable rootLevelDataTable, JsonArray sourceData) throws Exception {
@@ -493,22 +423,21 @@ public class Main {
         // Move footer
         System.out.print("\tMove footer... ");
         startTime = System.currentTimeMillis();
-        int heightTable = calculateTotalTableHeightRecursive(sheetConfig, null, rootLevelDataTable, 0);
+        int heightTable = calculateTotalTableHeightRecursive(sheetConfig, null, sheetConfig.getArrRange(), null, rootLevelDataTable.getDataTables(), 0);
         if (heightTable > 0) {
             targetSheet.shiftRows(new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getRow() + 1, targetSheet.getLastRowNum(), heightTable, true, true);
         }
         System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
-//        // Init start row
-//        int startRow = new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getRow() + 1;
-//        int totalAppend = 0;
-//        if (heightTable > 0) {
-//            System.out.print("\tGenerate... ");
-//            startTime = System.currentTimeMillis();
-//            totalAppend = generateFileFromTemplate(0, startRow, jsonArrData, targetSheet, configSetting, sheetConfig);
-//            System.out.println((System.currentTimeMillis() - startTime) + "ms");
-//        }
-//
+        // Init start row
+        int startRow = new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getRow() + 1;
+        if (heightTable > 0) {
+            System.out.print("\tGenerate... ");
+            startTime = System.currentTimeMillis();
+            generateFileFromTemplate(startRow, targetSheet, sheetConfig, null, sheetConfig.getArrRange(), null, rootLevelDataTable.getDataTables(), 0);
+            System.out.println((System.currentTimeMillis() - startTime) + "ms");
+        }
+
 //        // remove range template
 //        System.out.print("\tRemove template... ");
 //        startTime = System.currentTimeMillis();
@@ -519,12 +448,12 @@ public class Main {
 //        if (configSetting.isHasGeneralData()) {
 //            System.out.print("\tFill data general... ");
 //            startTime = System.currentTimeMillis();
-//            fillDataGeneral(targetSheet, totalAppend, configSetting, sheetConfig, sourceData.getJsonObject(0));
+//            fillDataGeneral(targetSheet, heightTable, configSetting, sheetConfig, sourceData.getJsonObject(0));
 //            System.out.println((System.currentTimeMillis() - startTime) + "ms");
 //        }
 //
 //        // Merge cell
-//        if (configSetting.isMergeCell() && totalAppend > 0) {
+//        if (configSetting.isMergeCell() && heightTable > 0) {
 //            startTime = System.currentTimeMillis();
 //            System.out.print("\tMerge cell... ");
 //            System.out.println((System.currentTimeMillis() - startTime) + "ms");
@@ -534,89 +463,190 @@ public class Main {
         XSSFFormulaEvaluator.evaluateAllFormulaCells(sourceTemplate);
     }
 
-//    private static int generateFileFromTemplate(int level, int startRow, ChildTree jsonArrData, XSSFSheet targetSheet, ConfigSetting configSetting, SheetConfig sheetConfig) throws Exception {
-//        ArrayList<ItemTree> dataObject = jsonArrData.getData();
+    private static int generateFileFromTemplate(int startRow, XSSFSheet targetSheet, SheetConfig sheetConfig, Range parentRange, List<Range> rangeList, DataTable parentDataTable, List<DataTable> dataTableList, int level) throws Exception {
+        int totalAppendRow = 0;
+
+        // loop all dataTable
+        for (int indexDataTable = 0; indexDataTable < dataTableList.size(); indexDataTable++) {
+            DataTable selectedDataTable = dataTableList.get(indexDataTable);
+            Range rangeConfig = rangeList.get(indexDataTable);
+
+            // generate space between two datatable - skip first dataTable
+            if (indexDataTable != 0) {
+                Range preRangeConfig = rangeList.get(indexDataTable - 1);
+
+                int endRowPreRangeTemplate = new CellAddress(preRangeConfig.getEnd()).getRow();
+                int beginRowRangeTemplate = new CellAddress(rangeConfig.getBegin()).getRow();
+
+                int highRow = beginRowRangeTemplate - endRowPreRangeTemplate - 1;
+
+                System.out.println("targetSheet.copyRows: range(" + (endRowPreRangeTemplate) + "," + beginRowRangeTemplate + ") -> " + (startRow + totalAppendRow) + ";");
+                targetSheet.copyRows(endRowPreRangeTemplate + 1, beginRowRangeTemplate - 1, startRow + totalAppendRow, new CellCopyPolicy());
+                exportTempFile(targetSheet);
+
+                totalAppendRow += highRow;
+            }
+
+            // loop all rowData in dataTable
+            for (int indexRowData = 0; indexRowData < selectedDataTable.getRowData().size(); indexRowData++) {
+                RowData selectedRowData = selectedDataTable.getRowData().get(indexRowData);
+
+                // generate for highest row (leaf)
+                if (rangeConfig.getChildRange() == null) {
+                    int beginRowTemplate = new CellAddress(rangeConfig.getBegin()).getRow();
+                    int endRowTemplate = new CellAddress(rangeConfig.getEnd()).getRow();
+
+                    int highRow = rangeConfig.getHeightRange();
+
+                    System.out.println("targetSheet.copyRows: range(" + beginRowTemplate + "," + endRowTemplate + ") -> " + (startRow + totalAppendRow) + ";");
+                    targetSheet.copyRows(beginRowTemplate, endRowTemplate, startRow + totalAppendRow, new CellCopyPolicy());
+                    exportTempFile(targetSheet);
+                    // fill data ...
+
+                    totalAppendRow += highRow;
+                }
+
+                // generate for sub data row (branch)
+                if (rangeConfig.getChildRange() != null) {
+
+                    // generate begin to begin child
+                    {
+                        int beginRowTemplate = new CellAddress(rangeConfig.getBegin()).getRow();
+                        int beginRowChildTemplate = new CellAddress(rangeConfig.getChildRange().getFirst().getBegin()).getRow();
+
+                        int highRow = beginRowChildTemplate - beginRowTemplate;
+
+                        if (highRow > 0) {
+                            System.out.println("targetSheet.copyRows: range(" + beginRowTemplate + "," + (beginRowChildTemplate - 1) + ") -> " + (startRow + totalAppendRow) + ";");
+                            targetSheet.copyRows(beginRowTemplate, beginRowChildTemplate - 1, startRow + totalAppendRow, new CellCopyPolicy());
+                            exportTempFile(targetSheet);
+
+                            totalAppendRow += highRow;
+                        }
+                    }
+
+                    // recursive - generate child row
+                    {
+                        int childRowNum = generateFileFromTemplate(startRow + totalAppendRow, targetSheet, sheetConfig, rangeConfig, rangeConfig.getChildRange(), selectedDataTable, selectedRowData.getLevelDataTable().getDataTables(), level + 1);
+
+                        totalAppendRow += childRowNum;
+                    }
+
+                    // generate end last child to end row
+                    {
+                        int endRowTemplate = new CellAddress(rangeConfig.getEnd()).getRow();
+                        int endRowChildTemplate = new CellAddress(rangeConfig.getChildRange().getLast().getEnd()).getRow();
+
+                        int highRow = endRowTemplate - endRowChildTemplate;
+
+                        if (highRow > 0) {
+                            System.out.println("targetSheet.copyRows: range(" + (endRowChildTemplate + 1) + "," + (endRowTemplate) + ") -> " + (startRow + totalAppendRow) + ";");
+                            targetSheet.copyRows(endRowChildTemplate + 1, endRowTemplate, startRow + totalAppendRow, new CellCopyPolicy());
+                            exportTempFile(targetSheet);
+
+                            totalAppendRow += highRow;
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+//        for (int indexDataTable = 0; indexDataTable < dataTableList.size(); indexDataTable++) {
+//            DataTable selectedDataTableList = dataTableList.get(indexDataTable);
+//            Range rangeConfig = rangeList.get(indexDataTable);
 //
-//        int totalAppendRow = 0;
+//            for (RowData item : selectedDataTableList.getRowData()) {
+//                // generate header row between parent and child (if level not highest)
+//                if (level < sheetConfig.getTotalGroup() - 1) {
+//                    int beginRowParentTemplate = new CellAddress(sheetConfig.getArrRange().get(level).getBegin()).getRow();
+//                    int beginRowChildTemplate = new CellAddress(sheetConfig.getArrRange().get(level + 1).getBegin()).getRow();
 //
-//        for (ItemTree item: dataObject) {
-//            // generate header row between parent and child (if level not highest)
-//            if (level < sheetConfig.getTotalGroup() - 1) {
-//                int beginRowParentTemplate = new CellAddress(sheetConfig.getArrRange().get(level).getBegin()).getRow();
-//                int beginRowChildTemplate = new CellAddress(sheetConfig.getArrRange().get(level + 1).getBegin()).getRow();
+//                    // Only generate if it has content between
+//                    if (beginRowChildTemplate - beginRowParentTemplate > 0) {
+//                        targetSheet.copyRows(beginRowParentTemplate, beginRowChildTemplate - 1, startRow + totalAppendRow, new CellCopyPolicy());
 //
-//                // Only generate if it has content between
-//                if (beginRowChildTemplate - beginRowParentTemplate > 0) {
-//                    targetSheet.copyRows(beginRowParentTemplate, beginRowChildTemplate - 1, startRow + totalAppendRow, new CellCopyPolicy());
+//                        // Fill data to row
+//                        CellAddress beginRange = new CellAddress(startRow + totalAppendRow, 0);
+//                        CellAddress endRange = new CellAddress(beginRange.getRow() + beginRowChildTemplate - beginRowParentTemplate - 1, new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getColumn());
+//                        Range range = new Range(beginRange.toString(), endRange.toString());
+////                    fillData(range, item.getValue(), targetSheet, configSetting, "<#table.(.*?)>");
 //
-//                    // Fill data to row
+//                        totalAppendRow += beginRowChildTemplate - beginRowParentTemplate;
+////                    exportTempFile(targetSheet);
+//                    }
+//                }
+//
+//                // go to generate deep child (if level not highest - has child)
+//                if (level < sheetConfig.getTotalGroup() - 1) {
+//                    ChildTree childObject = item.getChild();
+//
+//                    int numGenerateRowChild = generateFileFromTemplate(level + 1, startRow + totalAppendRow, childObject, targetSheet, configSetting, sheetConfig);
+//
+//                    totalAppendRow += numGenerateRowChild;
+////                exportTempFile(targetSheet);
+//                }
+//
+//                // generate row chill
+//                if (level == sheetConfig.getTotalGroup() - 1) {
+//                    int beginRowChildTemplate = new CellAddress(sheetConfig.getArrRange().get(level).getBegin()).getRow();
+//                    int endRowChildTemplate = new CellAddress(sheetConfig.getArrRange().get(level).getEnd()).getRow();
+//
+//                    targetSheet.copyRows(beginRowChildTemplate, endRowChildTemplate, startRow + totalAppendRow, new CellCopyPolicy());
+//
+//                    // fill data to row
 //                    CellAddress beginRange = new CellAddress(startRow + totalAppendRow, 0);
-//                    CellAddress endRange = new CellAddress(beginRange.getRow() + beginRowChildTemplate - beginRowParentTemplate - 1, new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getColumn());
+//                    CellAddress endRange = new CellAddress(beginRange.getRow() + sheetConfig.getArrRange().get(level).getHeightRange() - 1, new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getColumn());
 //                    Range range = new Range(beginRange.toString(), endRange.toString());
 //                    fillData(range, item.getValue(), targetSheet, configSetting, "<#table.(.*?)>");
 //
-//                    totalAppendRow += beginRowChildTemplate - beginRowParentTemplate;
+//                    totalAppendRow += endRowChildTemplate - beginRowChildTemplate + 1;
+////                exportTempFile(targetSheet);
+//                }
+//
+//                // generate footer row between parent and child (if level not highest)
+//                if (level < sheetConfig.getTotalGroup() - 1) {
+//                    int endRowParentTemplate = new CellAddress(sheetConfig.getArrRange().get(level).getEnd()).getRow();
+//                    int endRowChildTemplate = new CellAddress(sheetConfig.getArrRange().get(level + 1).getEnd()).getRow();
+//
+//                    // Only generate if it has content between
+//                    if (endRowParentTemplate - endRowChildTemplate > 0) {
+//                        targetSheet.copyRows(endRowChildTemplate + 1, endRowParentTemplate, startRow + totalAppendRow, new CellCopyPolicy());
+//
+//                        // Fill data to row
+//                        CellAddress beginRange = new CellAddress(startRow + totalAppendRow, 0);
+//                        CellAddress endRange = new CellAddress(beginRange.getRow() + endRowParentTemplate - endRowChildTemplate - 1, new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getColumn());
+//                        Range range = new Range(beginRange.toString(), endRange.toString());
+////                    fillData(range, item.getValue(), targetSheet, configSetting, "<#table.(.*?)>");
+//
+//                        totalAppendRow += endRowParentTemplate - endRowChildTemplate;
 ////                    exportTempFile(targetSheet);
+//                    }
 //                }
 //            }
 //
-//            // go to generate deep child (if level not highest - has child)
-//            if (level < sheetConfig.getTotalGroup() - 1) {
-//                ChildTree childObject = item.getChild();
-//
-//                int numGenerateRowChild = generateFileFromTemplate(level + 1, startRow + totalAppendRow, childObject, targetSheet, configSetting, sheetConfig);
-//
-//                totalAppendRow += numGenerateRowChild;
-////                exportTempFile(targetSheet);
-//            }
-//
-//            // generate row chill
-//            if (level == sheetConfig.getTotalGroup() - 1) {
-//                int beginRowChildTemplate = new CellAddress(sheetConfig.getArrRange().get(level).getBegin()).getRow();
-//                int endRowChildTemplate = new CellAddress(sheetConfig.getArrRange().get(level).getEnd()).getRow();
-//
-//                targetSheet.copyRows(beginRowChildTemplate, endRowChildTemplate, startRow + totalAppendRow, new CellCopyPolicy());
-//
-//                // fill data to row
-//                CellAddress beginRange = new CellAddress(startRow + totalAppendRow, 0);
-//                CellAddress endRange = new CellAddress(beginRange.getRow() + sheetConfig.getArrRange().get(level).getHeightRange() - 1, new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getColumn());
-//                Range range = new Range(beginRange.toString(), endRange.toString());
-//                fillData(range, item.getValue(), targetSheet, configSetting, "<#table.(.*?)>");
-//
-//                totalAppendRow += endRowChildTemplate - beginRowChildTemplate + 1;
-////                exportTempFile(targetSheet);
-//            }
-//
-//            // generate footer row between parent and child (if level not highest)
-//            if (level < sheetConfig.getTotalGroup() - 1) {
-//                int endRowParentTemplate = new CellAddress(sheetConfig.getArrRange().get(level).getEnd()).getRow();
-//                int endRowChildTemplate = new CellAddress(sheetConfig.getArrRange().get(level + 1).getEnd()).getRow();
-//
-//                // Only generate if it has content between
-//                if (endRowParentTemplate - endRowChildTemplate > 0) {
-//                    targetSheet.copyRows(endRowChildTemplate + 1, endRowParentTemplate, startRow + totalAppendRow, new CellCopyPolicy());
-//
-//                    // Fill data to row
-//                    CellAddress beginRange = new CellAddress(startRow + totalAppendRow, 0);
-//                    CellAddress endRange = new CellAddress(beginRange.getRow() + endRowParentTemplate - endRowChildTemplate - 1, new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getColumn());
-//                    Range range = new Range(beginRange.toString(), endRange.toString());
-//                    fillData(range, item.getValue(), targetSheet, configSetting, "<#table.(.*?)>");
-//
-//                    totalAppendRow += endRowParentTemplate - endRowChildTemplate;
-////                    exportTempFile(targetSheet);
-//                }
-//            }
 //        }
-//
-//        return totalAppendRow;
-//    }
-//
-//    private static void exportTempFile(XSSFSheet targetSheet) throws Exception {
-//        FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
-//        targetSheet.getWorkbook().write(fOut);
-//        fOut.close();
-//    }
-//
+
+        return totalAppendRow;
+    }
+
+    private static void exportTempFile(XSSFSheet targetSheet) throws Exception {
+        FileOutputStream fOut = new FileOutputStream("./temp.xlsx");
+        targetSheet.getWorkbook().write(fOut);
+        fOut.close();
+    }
+
 //    private static void fillDataGeneral(XSSFSheet sheet, int totalAppend, ConfigSetting configSetting, SheetConfig sheetConfig, JsonObject firstRowData) throws Exception {
 //        int startRow = 0;
 //        int endRow = new CellAddress(sheetConfig.getArrRange().getFirst().getBegin()).getRow() - 1;
@@ -749,43 +779,65 @@ public class Main {
 //        }
 //    }
 
-    private static int calculateTotalTableHeightRecursive(SheetConfig sheetConfig, DataTable parentDataTable, LevelDataTable levelDataTable, int level) {
+    private static int calculateTotalTableHeightRecursive(SheetConfig sheetConfig, Range parentRange, List<Range> rangeList, DataTable parentDataTable, List<DataTable> dataTableList, int level) {
         int totalHeight = 0;
-
-        // Get height only level
-        int heightTemplateLevel = sheetConfig.getArrRange().get(level).getHeightRange();
-        if (level + 1 < sheetConfig.getTotalGroup()) {
-            heightTemplateLevel -= sheetConfig.getArrRange().get(level).getHeightRange();
-        }
 
         int spaceBetweenTopParent = 0;
         int spaceBetweenBottomParent = 0;
 
-        for (Range rangeConfig: sheetConfig.getArrRange()) {
-            if (level == 0) {
-                spaceBetweenTopParent = 0;
-                spaceBetweenBottomParent = 0;
-            } else {
-                parentDataTable.get
+        if (level != 0) {
+            // calc space from begin parent to first child
+            int beginParent = new CellAddress(parentRange.getBegin()).getRow();
+            int beginFirstChild = new CellAddress(rangeList.getFirst().getBegin()).getRow();
+            spaceBetweenTopParent = beginFirstChild - beginParent;
+
+            // calc space from last child to end parent
+            int endParent = new CellAddress(parentRange.getEnd()).getRow();
+            int endLastChild = new CellAddress(rangeList.getLast().getEnd()).getRow();
+            spaceBetweenBottomParent = endParent - endLastChild;
+        } else {
+            totalHeight -= (new CellAddress(rangeList.getLast().getEnd()).getRow() - new CellAddress(rangeList.getFirst().getBegin()).getRow() + 1);
+        }
+
+        // calc space between - loop skip last element
+        int totalSpaceBetweenChild = 0;
+        for (int indexRange = 0; indexRange < rangeList.size() - 1; indexRange++) {
+            Range firstRangeCob = rangeList.get(indexRange);
+            Range secondRangeCob = rangeList.get(indexRange + 1);
+
+            // calc diff
+            int intRangeFirstCob = new CellAddress(firstRangeCob.getEnd()).getRow();
+            int intRangeSecondCob = new CellAddress(secondRangeCob.getBegin()).getRow();
+
+            totalSpaceBetweenChild += (intRangeSecondCob - intRangeFirstCob - 1);
+        }
+
+        // calc child claim space
+        int totalSpaceBetweenRowAndTable = 0;
+        for (int indexRange = 0; indexRange < rangeList.size(); indexRange++) {
+            Range selectedRange = rangeList.get(indexRange);
+
+            DataTable dataTable = dataTableList.get(indexRange);
+            List<RowData> rowDataList = dataTable.getRowData();
+
+            int totalClaimRowChild = 0;
+            for (int indexRowChild = 0; indexRowChild < rowDataList.size(); indexRowChild++) {
+
+                // Level row table is max of tree
+                if (selectedRange.getChildRange() == null) {
+                    totalClaimRowChild += selectedRange.getHeightRange();
+                } else {
+                    int temp = calculateTotalTableHeightRecursive(sheetConfig, selectedRange, selectedRange.getChildRange(), dataTable, dataTable.getRowData().get(indexRowChild).getLevelDataTable().getDataTables(), level + 1);
+                    totalClaimRowChild += temp;
+                }
             }
-        }
-        if (data.getData() == null) {
-            return 0;
-        }
 
-        int sizeObject = data.getData().size();
-        ArrayList<ItemTree> dataObject = data.getData();
-
-        if (level + 1 < sheetConfig.getTotalGroup()) {
-            for (ItemTree item: dataObject) {
-                ChildTree childData = item.getChild();
-
-                int heightChildLevel = calculateTotalTableHeightRecursive(sheetConfig, childData, level + 1);
-                totalHeight += heightChildLevel;
-            }
+            totalSpaceBetweenRowAndTable += totalClaimRowChild;
         }
 
-        return totalHeight + heightTemplateLevel * sizeObject;
+        totalHeight += (spaceBetweenTopParent + spaceBetweenBottomParent + totalSpaceBetweenChild + totalSpaceBetweenRowAndTable);
+
+        return totalHeight;
     }
 //
 //    private static void mergeCell(XSSFSheet sheet) {

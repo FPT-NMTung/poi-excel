@@ -5,9 +5,17 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import modelDocx.*;
 import org.apache.commons.io.IOUtils;
+import org.apache.poi.hssf.record.CommonObjectDataSubRecord;
+import org.apache.poi.ooxml.POIXMLDocumentPart;
 import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.ss.usermodel.Shape;
 import org.apache.poi.xwpf.usermodel.*;
+import org.apache.xmlbeans.XmlCursor;
+import org.apache.xmlbeans.XmlObject;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTR;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTRow;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTDrawing;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTxbxContent;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -17,7 +25,7 @@ import java.util.*;
 public class MainDocx {
     public static void main(String[] args) throws Exception {
         // Read template
-        File templateFile = new File("GD_10.docx");
+        File templateFile = new File("GD_10 - copy.docx");
         if (!templateFile.exists()) {
             throw new Exception("Template file not found");
         }
@@ -269,7 +277,7 @@ public class MainDocx {
         }
     }
 
-    private static void fillDataGeneral(XWPFDocument doc, JsonObject data, ConfigSetting configSetting) {
+    private static void fillDataGeneral(XWPFDocument doc, JsonObject data, ConfigSetting configSetting) throws Exception {
         // get list config general field
         ArrayList<CellConfig> listCell = configSetting.getGeneralData();
         for (CellConfig cellConfig: listCell) {
@@ -288,7 +296,6 @@ public class MainDocx {
             replacement = formatField(replacement, format);
 
             // search all paragraph
-
             for (XWPFParagraph paragraph : doc.getParagraphs()) {
                 fillDataToParagraph(paragraph, searchText, replacement);
             }
@@ -331,6 +338,32 @@ public class MainDocx {
             }
         }
     }
+
+//    private static void fillDataToShape(List<XWPFRun> listRuns, String searchText, String replacement) {
+//        TextSegment searchTextSegment;
+//        while((searchTextSegment = paragraph.searchText(searchText, new PositionInParagraph(0, 0, 0))) != null) {
+//            XWPFRun beginRun = paragraph.getRuns().get(searchTextSegment.getBeginRun());
+//            String textInBeginRun = beginRun.getText(searchTextSegment.getBeginText());
+//            String textBefore = textInBeginRun.substring(0, searchTextSegment.getBeginChar());
+//
+//            XWPFRun endRun = paragraph.getRuns().get(searchTextSegment.getEndRun());
+//            String textInEndRun = endRun.getText(searchTextSegment.getEndText());
+//            String textAfter = textInEndRun.substring(searchTextSegment.getEndChar() + 1);
+//
+//            if (searchTextSegment.getEndRun() == searchTextSegment.getBeginRun()) {
+//                textInBeginRun = textBefore + replacement + textAfter; // if we have only one run, we need the text before, then the replacement, then the text after in that run
+//            } else {
+//                textInBeginRun = textBefore + replacement; // else we need the text before followed by the replacement in begin run
+//                endRun.setText(textAfter, searchTextSegment.getEndText()); // and the text after in end run
+//            }
+//
+//            beginRun.setText(textInBeginRun, searchTextSegment.getBeginText());
+//
+//            for (int runBetween = searchTextSegment.getEndRun() - 1; runBetween > searchTextSegment.getBeginRun(); runBetween--) {
+//                paragraph.removeRun(runBetween); // remove not needed runs
+//            }
+//        }
+//    }
 
     private static void generateTable(XWPFDocument doc, ArrayList<TableData> listTableData, ConfigSetting configSetting) throws Exception {
         List<XWPFTable> tables = doc.getTables();
