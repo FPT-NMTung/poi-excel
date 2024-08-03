@@ -1,5 +1,8 @@
 [
   {
+    "GENERAL_NAME_REPORT": "osuhf o87 34h fuqruh oeruhoenrw ewfi nhwe 9 uh e erhg9rh g9hrfg"
+  },
+  {
     "STT": 1,
     "ROW_NUM": 1,
     "CUSTOMER_CODE": "C001",
@@ -40,48 +43,6 @@
     "BALANCE": "",
     "INDEX_TABLE_EXCEL": "TABLE_01",
     "INDEX_TABLE_EXCEL_SUB": "SUB_01"
-  },
-  {
-    "STT": 3,
-    "ROW_NUM": 1,
-    "CUSTOMER_CODE": "C001",
-    "CUSTOMER_NAME": "Nguyen Van C001",
-    "CUSTOMER_ADDRESS": "SN 01, Hai Ba Trung, Ha Noi",
-    "ROW_NUM_SHARE": 1,
-    "SHARE_CODE": "FPT",
-    "SHARE_VOLUME": 1000,
-    "SHARE_STATUS": "",
-    "SHARE_STATUS_VOLUME": "",
-    "SHARE_FREE": "FREE",
-    "SHARE_BLOCK": 250,
-    "ROW_NUM_CASH": "",
-    "ACCOUNT_CODE": "",
-    "CASH_BALANCE": "",
-    "DAY": "",
-    "BALANCE": "",
-    "INDEX_TABLE_EXCEL": "TABLE_01",
-    "INDEX_TABLE_EXCEL_SUB": "SUB_02"
-  },
-  {
-    "STT": 4,
-    "ROW_NUM": 1,
-    "CUSTOMER_CODE": "C001",
-    "CUSTOMER_NAME": "Nguyen Van C001",
-    "CUSTOMER_ADDRESS": "SN 01, Hai Ba Trung, Ha Noi",
-    "ROW_NUM_SHARE": 1,
-    "SHARE_CODE": "FPT",
-    "SHARE_VOLUME": 1000,
-    "SHARE_STATUS": "",
-    "SHARE_STATUS_VOLUME": "",
-    "SHARE_FREE": "BLOCK",
-    "SHARE_BLOCK": 750,
-    "ROW_NUM_CASH": "",
-    "ACCOUNT_CODE": "",
-    "CASH_BALANCE": "",
-    "DAY": "",
-    "BALANCE": "",
-    "INDEX_TABLE_EXCEL": "TABLE_01",
-    "INDEX_TABLE_EXCEL_SUB": "SUB_02"
   },
   {
     "STT": 5,

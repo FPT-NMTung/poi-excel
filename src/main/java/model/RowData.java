@@ -20,4 +20,8 @@ public class RowData {
     public LevelDataTable getLevelDataTable() {
         return levelDataTable;
     }
+
+    public JsonObject getRowData() {
+        return rowData;
+    }
 }
