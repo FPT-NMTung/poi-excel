@@ -6,16 +6,15 @@ import io.vertx.core.json.JsonObject;
 import modelDocx.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.hssf.record.CommonObjectDataSubRecord;
+import org.apache.poi.hssf.usermodel.HSSFFont;
 import org.apache.poi.ooxml.POIXMLDocumentPart;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.Shape;
+import org.apache.poi.xwpf.model.XWPFHeaderFooterPolicy;
 import org.apache.poi.xwpf.usermodel.*;
 import org.apache.xmlbeans.XmlCursor;
 import org.apache.xmlbeans.XmlObject;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTR;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTRow;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTDrawing;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTxbxContent;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.*;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -25,7 +24,7 @@ import java.util.*;
 public class MainDocx {
     public static void main(String[] args) throws Exception {
         // Read template
-        File templateFile = new File("GD_10 - copy.docx");
+        File templateFile = new File("22A-LK.docx");
         if (!templateFile.exists()) {
             throw new Exception("Template file not found");
         }
@@ -47,7 +46,8 @@ public class MainDocx {
             // Fill general data
             startTime = System.currentTimeMillis();
             System.out.print("Fill general data ... ");
-            fillDataGeneral(doc, sourceData.getJsonObject(0), configSetting);
+            JsonObject generalData = (JsonObject) sourceData.remove(0);
+            fillDataGeneral(doc, generalData, configSetting);
             System.out.println((System.currentTimeMillis() - startTime) + "ms");
         }
 
@@ -64,6 +64,8 @@ public class MainDocx {
             generateTable(doc, dataProcessed, configSetting);
             System.out.println((System.currentTimeMillis() - startTime) + "ms");
         }
+
+        removeLine(doc);
 
         FileOutputStream fOut = new FileOutputStream("./result.docx");
         doc.write(fOut);
@@ -278,6 +280,8 @@ public class MainDocx {
     }
 
     private static void fillDataGeneral(XWPFDocument doc, JsonObject data, ConfigSetting configSetting) throws Exception {
+        XWPFHeaderFooterPolicy policy = new XWPFHeaderFooterPolicy(doc);
+
         // get list config general field
         ArrayList<CellConfig> listCell = configSetting.getGeneralData();
         for (CellConfig cellConfig: listCell) {
@@ -295,9 +299,27 @@ public class MainDocx {
 
             replacement = formatField(replacement, format);
 
+            // fill data to header
+            if (policy.getDefaultHeader() != null) {
+                XWPFHeader header = policy.getDefaultHeader();
+
+                for (XWPFParagraph paragraphHeader : header.getParagraphs()) {
+                    fillDataToParagraph(paragraphHeader, searchText, replacement, format);
+                }
+            }
+
+            // fill data to footer
+            if (policy.getDefaultFooter() != null) {
+                XWPFFooter footer = policy.getDefaultFooter();
+
+                for (XWPFParagraph paragraphFooter : footer.getParagraphs()) {
+                    fillDataToParagraph(paragraphFooter, searchText, replacement, format);
+                }
+            }
+
             // search all paragraph
             for (XWPFParagraph paragraph : doc.getParagraphs()) {
-                fillDataToParagraph(paragraph, searchText, replacement);
+                fillDataToParagraph(paragraph, searchText, replacement, format);
             }
 
             List<XWPFTable> tables = doc.getTables();
@@ -305,15 +327,32 @@ public class MainDocx {
                 for (XWPFTableRow row : table.getRows()) {
                     for (XWPFTableCell cell : row.getTableCells()) {
                         for (XWPFParagraph paragraph : cell.getParagraphs()) {
-                            fillDataToParagraph(paragraph, searchText, replacement);
+                            fillDataToParagraph(paragraph, searchText, replacement, format);
                         }
+
+                        fillDataDeepTableGeneral(cell, data, configSetting, searchText, replacement, format);
                     }
                 }
             }
         }
     }
 
-    private static void fillDataToParagraph(XWPFParagraph paragraph, String searchText, String replacement) {
+    private static void fillDataDeepTableGeneral(XWPFTableCell cellTable, JsonObject data, ConfigSetting configSetting, String searchText, String replacement, String format) throws Exception {
+        List<XWPFTable> tables = cellTable.getTables();
+        for (XWPFTable table : tables) {
+            for (XWPFTableRow row : table.getRows()) {
+                for (XWPFTableCell cell : row.getTableCells()) {
+                    for (XWPFParagraph paragraph : cell.getParagraphs()) {
+                        fillDataToParagraph(paragraph, searchText, replacement, format);
+                    }
+
+                    fillDataDeepTableGeneral(cell, data, configSetting, searchText, replacement, format);
+                }
+            }
+        }
+    }
+
+    private static void fillDataToParagraph(XWPFParagraph paragraph, String searchText, String replacement, String format) {
         TextSegment searchTextSegment;
         while((searchTextSegment = paragraph.searchText(searchText, new PositionInParagraph(0, 0, 0))) != null) {
             XWPFRun beginRun = paragraph.getRuns().get(searchTextSegment.getBeginRun());
@@ -332,6 +371,13 @@ public class MainDocx {
             }
 
             beginRun.setText(textInBeginRun, searchTextSegment.getBeginText());
+
+            if (format.equals("checkbox")) {
+                beginRun.setFontFamily("Wingdings 2", XWPFRun.FontCharRange.ascii);
+                endRun.setFontFamily("Wingdings 2", XWPFRun.FontCharRange.ascii);
+                beginRun.setFontFamily("Wingdings 2", XWPFRun.FontCharRange.hAnsi);
+                endRun.setFontFamily("Wingdings 2", XWPFRun.FontCharRange.hAnsi);
+            }
 
             for (int runBetween = searchTextSegment.getEndRun() - 1; runBetween > searchTextSegment.getBeginRun(); runBetween--) {
                 paragraph.removeRun(runBetween); // remove not needed runs
@@ -374,6 +420,7 @@ public class MainDocx {
             if (!table.getText().contains("<#TBG>")) {
                 continue;
             }
+            System.out.println(table.getText());
 
             TableConfig tableConfig = configSetting.getTableConfigs().get(indexTableDoc);
             RowConfig rowConfig = tableConfig.getRowConfig();
@@ -386,6 +433,8 @@ public class MainDocx {
             for (int cursorRowIndex = rowConfig.getStartRow(); cursorRowIndex <= rowConfig.getEndRow(); cursorRowIndex++) {
                 table.removeRow(rowConfig.getStartRow());
             }
+
+            System.out.println(table.getRows().size());
 
             // remove template <#TBG>
             table.removeRow(table.getRows().size() - 1);
@@ -414,12 +463,14 @@ public class MainDocx {
                     // loop for fill data
                     for (CellConfig cellConfig: rowConfig.getMapCellConfig()) {
                         String nameCell = cellConfig.getName();
+                        System.out.println(cellConfig.getData());
+                        System.out.println();
                         String valueCell = rowData.getData().getValue(cellConfig.getData()).toString();
                         String formatValueCell = formatField(valueCell, cellConfig.getFormat());
 
                         for (XWPFTableCell cell: copiedRow.getTableCells()) {
                             for (XWPFParagraph cellParagraph: cell.getParagraphs()) {
-                                fillDataToParagraph(cellParagraph, "<#table." + nameCell + ">", formatValueCell);
+                                fillDataToParagraph(cellParagraph, "<#table." + nameCell + ">", formatValueCell, cellConfig.getFormat());
                             }
                         }
                     }
@@ -445,7 +496,7 @@ public class MainDocx {
 
                         for (XWPFTableCell cell: copiedRow.getTableCells()) {
                             for (XWPFParagraph cellParagraph: cell.getParagraphs()) {
-                                fillDataToParagraph(cellParagraph, "<#table." + nameCell + ">", formatValueCell);
+                                fillDataToParagraph(cellParagraph, "<#table." + nameCell + ">", formatValueCell, cellConfig.getFormat());
                             }
                         }
                     }
@@ -454,8 +505,6 @@ public class MainDocx {
 
                     totalAppend++;
                 }
-
-                test(doc);
 
                 RowConfig childRowConfig = rowConfig.getRowChildConfig();
                 ArrayList<RowData> listRowDataChild = rowData.getChildRow();
@@ -474,7 +523,7 @@ public class MainDocx {
 
                         for (XWPFTableCell cell: copiedRow.getTableCells()) {
                             for (XWPFParagraph cellParagraph: cell.getParagraphs()) {
-                                fillDataToParagraph(cellParagraph, "<#table." + nameCell + ">", formatValueCell);
+                                fillDataToParagraph(cellParagraph, "<#table." + nameCell + ">", formatValueCell, cellConfig.getFormat());
                             }
                         }
                     }
@@ -498,55 +547,111 @@ public class MainDocx {
 
         switch (format) {
             case "number":
-                bd  = new BigDecimal(value);
-                String newValue = bd.stripTrailingZeros().toPlainString();
+                try {
+                    bd  = new BigDecimal(value);
+                    String newValue = bd.stripTrailingZeros().toPlainString();
 
-                String pattern = "";
-                if (newValue.contains(".")) {
-                    int lengthDiv = newValue.substring(newValue.indexOf(".")).length();
-                    String[] listZero = new String[lengthDiv];
-                    Arrays.fill(listZero, "0");
+                    String pattern = "";
+                    if (newValue.contains(".")) {
+                        int lengthDiv = newValue.substring(newValue.indexOf(".")).length();
+                        String[] listZero = new String[lengthDiv];
+                        Arrays.fill(listZero, "0");
 
-                    String subDiv = String.join("", listZero);
-                    pattern = "#,###" + "." + subDiv;
-                } else {
-                    pattern = "#,###";
+                        String subDiv = String.join("", listZero);
+                        pattern = "#,###" + "." + subDiv;
+                    } else {
+                        pattern = "#,###";
+                    }
+
+                    DecimalFormat formatter = new DecimalFormat(pattern);
+                    result = formatter.format(Double.parseDouble(newValue));
+                } catch (Exception e) {
+                    result = value;
                 }
-
-                DecimalFormat formatter = new DecimalFormat(pattern);
-                result = formatter.format(Double.parseDouble(newValue));
                 break;
             case "number_char_vi":
-                bd = new BigDecimal(value);
-                result = Converter.numberToCharVi(bd.stripTrailingZeros().toPlainString()).trim();
+                try {
+                    bd = new BigDecimal(value);
+                    result = Converter.numberToCharVi(bd.stripTrailingZeros().toPlainString()).trim();
+                } catch (Exception e) {
+                    result = value;
+                }
                 break;
             case "number_char_Vi":
-                bd = new BigDecimal(value);
-                result = Converter.numberToCharVi(bd.stripTrailingZeros().toPlainString()).trim();
-                if (result.length() >= 1) {
-                    result = result.substring(0, 1).toUpperCase() + result.substring(1);
+                try {
+                    bd = new BigDecimal(value);
+                    result = Converter.numberToCharVi(bd.stripTrailingZeros().toPlainString()).trim();
+                    if (result.length() >= 1) {
+                        result = result.substring(0, 1).toUpperCase() + result.substring(1);
+                    }
+                } catch (Exception e) {
+                    result = value;
                 }
                 break;
             case "number_char_VI":
-                bd = new BigDecimal(value);
-                result = Converter.numberToCharVi(bd.stripTrailingZeros().toPlainString()).trim().toUpperCase();
+                try {
+                    bd = new BigDecimal(value);
+                    result = Converter.numberToCharVi(bd.stripTrailingZeros().toPlainString()).trim().toUpperCase();
+                } catch (Exception e) {
+                    result = value;
+                }
                 break;
             case "number_char_en":
-                result = Converter.numberToCharEn(value).trim();
+                try {
+                    result = Converter.numberToCharEn(value).trim();
+                } catch (Exception e) {
+                    result = value;
+                }
                 break;
             case "number_char_En":
-                result = Converter.numberToCharEn(value).trim();
-                if (result.length() >= 1) {
-                    result = result.substring(0, 1).toUpperCase() + result.substring(1);
+                try {
+                    result = Converter.numberToCharEn(value).trim();
+                    if (result.length() >= 1) {
+                        result = result.substring(0, 1).toUpperCase() + result.substring(1);
+                    }
+                } catch (Exception e) {
+                    result = value;
                 }
                 break;
             case "number_char_EN":
-                result = Converter.numberToCharEn(value).trim().toUpperCase();
+                try {
+                    result = Converter.numberToCharEn(value).trim().toUpperCase();
+                } catch (Exception e) {
+                    result = value;
+                }
+                break;
+            case "checkbox":
+                switch (value) {
+                    case "TICK_V":
+                        result = "\uF052";
+                        break;
+                    case "TICK_X":
+                        result = "\uF051";
+                        break;
+                    default:
+                        result = "\uF0A3";
+                        break;
+                }
+
                 break;
             default:
                 result = value;
         }
 
         return result;
+    }
+
+    private static void removeLine (XWPFDocument doc) {
+        for (int i = doc.getBodyElements().size() - 1; i >= 0; i--) {
+            IBodyElement iBodyElement = doc.getBodyElements().get(i);
+            if (iBodyElement.getElementType() == BodyElementType.PARAGRAPH) {
+                XWPFParagraph paragraph = (XWPFParagraph) iBodyElement;
+                System.out.println(i + " " + paragraph.getText());
+
+                if (paragraph.getText().trim().equals("<#DELETE_LINE>")) {
+                    doc.removeBodyElement(i);
+                }
+            }
+        }
     }
 }

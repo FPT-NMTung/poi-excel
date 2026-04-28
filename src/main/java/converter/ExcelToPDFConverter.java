@@ -92,6 +92,11 @@ public class ExcelToPDFConverter {
 
     public static String getCellText(Cell cell) {
         String cellValue;
+
+        if (cell == null) {
+            return "";
+        }
+
         switch (cell.getCellType()) {
             case STRING:
                 cellValue = cell.getStringCellValue();

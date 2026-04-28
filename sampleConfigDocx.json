@@ -1,104 +1,226 @@
 {
   "general": [
     {
-      "name": "GENERAL_BOND_NAME",
+      "name": "trading_date",
+      "data": "TRADING_DATE",
       "format": "string"
     },
     {
-      "name": "GENERAL_BOND_CODE",
+      "name": "acc_name",
+      "data": "ACCOUNT_NAME",
       "format": "string"
     },
     {
-      "name": "GENERAL_BOND_PRICE",
-      "data": "GENERAL_BOND_PRICE",
-      "format": "number"
+      "name": "dcterm",
+      "data": "DCTERM_CODE",
+      "format": "string"
     },
     {
-      "name": "GENERAL_BOND_PRICE_VI",
-      "data": "GENERAL_BOND_PRICE",
-      "format": "number_char_Vi"
+      "name": "card_id",
+      "data": "CARD_ID",
+      "format": "string"
     },
     {
-      "name": "GENERAL_BOND_PRICE_EN",
-      "data": "GENERAL_BOND_PRICE",
-      "format": "number_char_En"
+      "name": "card_auth",
+      "data": "CARD_AUTH_ID",
+      "format": "string"
+    },
+    {
+      "name": "acc_code",
+      "data": "ACCOUNT_CODE",
+      "format": "string"
+    },
+    {
+      "name": "match_order",
+      "data": "MATCH_ORDER",
+      "format": "checkbox"
+    },
+    {
+      "name": "put_th",
+      "data": "PUTH_TH",
+      "format": "checkbox"
+    },
+    {
+      "name": "acc_auth",
+      "data": "ACC_AUTH",
+      "format": "string"
     }
   ],
   "table": [
     {
-      "name": "TABLE_GENERATE_0",
+      "name": "ORDER_BUY",
       "row": {
-        "index": "ROW_NUM",
-        "range": "2|2",
+        "index": "ROW_NUM_ORDER_BUY",
+        "range": "3|3",
         "column": [
           {
-            "name": "ROW_NUM",
-            "format": "number"
-          },
-          {
-            "name": "INFO",
+            "name": "share_code",
+            "data": "SHARE_CODE",
             "format": "string"
           },
           {
-            "name": "NUM_MEMBER",
+            "name": "qty",
+            "data": "QUANTITY",
+            "format": "number"
+          },
+          {
+            "name": "price",
+            "data": "PRICE",
+            "format": "number"
+          },
+          {
+            "name": "type_ord",
+            "data": "TYPE_ORDER",
             "format": "string"
           },
           {
-            "name": "NUM_IN",
-            "format": "number"
+            "name": "partner",
+            "data": "PARTNER_CODE",
+            "format": "string"
           },
           {
-            "name": "NUM_OUT",
-            "format": "number"
+            "name": "order_no",
+            "data": "ORDER_NO",
+            "format": "string"
           },
           {
-            "name": "NUM_TOTAL",
-            "format": "number"
+            "name": "time",
+            "data": "ORDER_TIME",
+            "format": "string"
           }
         ]
       }
     },
     {
-      "name": "TABLE_GENERATE_1",
+      "name": "ORDER_SELL",
       "row": {
-        "index": "GROUP",
-        "range": "2|3",
+        "index": "ROW_NUM_ORDER_SELL",
+        "range": "3|3",
         "column": [
           {
-            "name": "GROUP",
+            "name": "share_code",
+            "data": "SHARE_CODE",
+            "format": "string"
+          },
+          {
+            "name": "qty",
+            "data": "QUANTITY",
+            "format": "number"
+          },
+          {
+            "name": "price",
+            "data": "PRICE",
+            "format": "number"
+          },
+          {
+            "name": "type_ord",
+            "data": "TYPE_ORDER",
+            "format": "string"
+          },
+          {
+            "name": "partner",
+            "data": "PARTNER_CODE",
+            "format": "string"
+          },
+          {
+            "name": "order_no",
+            "data": "ORDER_NO",
+            "format": "string"
+          },
+          {
+            "name": "time",
+            "data": "ORDER_TIME",
             "format": "string"
           }
-        ],
-        "row": {
-          "index": "ROW_NUM",
-          "range": "3|3",
-          "column": [
-            {
-              "name": "ROW_NUM",
-              "format": "number"
-            },
-            {
-              "name": "INFO",
-              "format": "string"
-            },
-            {
-              "name": "NUM_MEMBER",
-              "format": "string"
-            },
-            {
-              "name": "NUM_IN",
-              "format": "number"
-            },
-            {
-              "name": "NUM_OUT",
-              "format": "number"
-            },
-            {
-              "name": "NUM_TOTAL",
-              "format": "number"
-            }
-          ]
-        }
+        ]
+      }
+    },
+    {
+      "name": "ORDER_CHANGE",
+      "row": {
+        "index": "ROW_NUM_ORDER_CHANGE",
+        "range": "4|4",
+        "column": [
+          {
+            "name": "share_code",
+            "data": "SHARE_CODE",
+            "format": "string"
+          },
+          {
+            "name": "side",
+            "data": "SIDE",
+            "format": "string"
+          },
+          {
+            "name": "old_qty",
+            "data": "OLD_QUANTITY",
+            "format": "number"
+          },
+          {
+            "name": "old_price",
+            "data": "OLD_PRICE",
+            "format": "string"
+          },
+          {
+            "name": "qty",
+            "data": "QUANTITY",
+            "format": "number"
+          },
+          {
+            "name": "price",
+            "data": "PRICE",
+            "format": "string"
+          },
+          {
+            "name": "order_no",
+            "data": "ORDER_NO",
+            "format": "string"
+          },
+          {
+            "name": "time",
+            "data": "ORDER_TIME",
+            "format": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ORDER_CANCEL",
+      "row": {
+        "index": "ROW_NUM_ORDER_CANCEL",
+        "range": "4|4",
+        "column": [
+          {
+            "name": "share_code",
+            "data": "SHARE_CODE",
+            "format": "string"
+          },
+          {
+            "name": "side",
+            "data": "SIDE",
+            "format": "string"
+          },
+          {
+            "name": "qty",
+            "data": "QUANTITY",
+            "format": "number"
+          },
+          {
+            "name": "price",
+            "data": "PRICE",
+            "format": "string"
+          },
+          {
+            "name": "order_no",
+            "data": "ORDER_NO",
+            "format": "string"
+          },
+          {
+            "name": "time",
+            "data": "ORDER_TIME",
+            "format": "string"
+          }
+        ]
       }
     }
   ]

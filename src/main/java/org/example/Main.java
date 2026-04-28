@@ -5,9 +5,14 @@ import io.vertx.core.json.JsonObject;
 import model.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellCopyPolicy;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.streaming.SXSSFCell;
+import org.apache.poi.xssf.streaming.SXSSFRow;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.*;
 
 import java.io.File;
@@ -17,12 +22,10 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static converter.ExcelToPDFConverter.convertExcelToPDF;
-
 public class Main {
     public static void main(String[] args) throws Exception {
         // Get file template
-        File templateFile = new File("template-equivalent-tables.xlsx");
+        File templateFile = new File("REPORT_CQQL_07.xlsx");
 //        File templateFile = new File("GD_07.xlsx");
 
         if (!templateFile.exists()) {
@@ -33,19 +36,19 @@ public class Main {
         long beginTime = System.currentTimeMillis();
 
         // Convert to POI
-        XSSFWorkbook wb = new XSSFWorkbook(templateFile);
+        XSSFWorkbook templateWb = new XSSFWorkbook(templateFile);
 
         // Get config setting
-        ConfigSetting configSetting = getConfigSetting(wb);
+        ConfigSetting configSetting = getConfigSetting(templateWb);
 
         // Loop sheet config
         for (int indexSheet = 0; indexSheet < configSetting.getSheets().size(); indexSheet++) {
             // get target sheet
-            XSSFSheet targetSheet = wb.getSheetAt(indexSheet);
+            XSSFSheet templateSheet = templateWb.getSheetAt(indexSheet);
             SheetConfig sheetConfig = configSetting.getSheets().get(indexSheet);
 
             // Get JSON data
-            String jsonStr = IOUtils.toString(new FileReader("./testDataSimple.json"));
+            String jsonStr = IOUtils.toString(new FileReader("./testData.json"));
             JsonArray sourceData = new JsonArray(jsonStr);
 
             // Process data
@@ -57,20 +60,20 @@ public class Main {
 
             // Generate file
             System.out.println("Start generate data... ");
-            generateFile(wb, targetSheet, configSetting, sheetConfig, rootLevelDataTable, sourceData);
+            generateFile(templateWb, templateSheet, configSetting, sheetConfig, rootLevelDataTable, sourceData);
         }
 
         // remove config sheet
         System.out.print("\tRemove config sheet... ");
         startTime = System.currentTimeMillis();
-        wb.removeSheetAt(wb.getSheetIndex("config"));
+        templateWb.removeSheetAt(templateWb.getSheetIndex("config"));
         System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
         // Export file
         System.out.print("Export file... ");
         startTime = System.currentTimeMillis();
         FileOutputStream fOut = new FileOutputStream("./result.xlsx");
-        wb.write(fOut);
+        templateWb.write(fOut);
         fOut.close();
         System.out.println((System.currentTimeMillis() - startTime) + "ms");
 
@@ -108,7 +111,14 @@ public class Main {
 
             String nameConfigCol    = cell.getStringCellValue();
             XSSFCell cellValue      = row.getCell(1);
-            int valueConfigCol      = (int) cellValue.getNumericCellValue();
+            int valueConfigCol      = 0;
+
+            try {
+                valueConfigCol      = (int) cellValue.getNumericCellValue();
+            } catch (Exception e) {
+                break;
+            }
+
 
             // skip row empty first column
             if (nameConfigCol.isBlank()) {
@@ -430,7 +440,7 @@ public class Main {
             targetSheet.shiftRows(new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getRow() + 1, targetSheet.getLastRowNum(), heightTable, true, true);
         }
         System.out.println((System.currentTimeMillis() - startTime) + "ms");
-
+        exportTempFile(targetSheet);
         // Init start row
         int startRow = new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getRow() + 1;
         if (heightTable > 0) {
@@ -472,9 +482,21 @@ public class Main {
         for (int indexRangeList = 0; indexRangeList < rangeList.size(); indexRangeList++) {
             Range rangeConfig = rangeList.get(indexRangeList);
 
-            if (dataTableList.size() > indexRangeList) {
-                DataTable selectedDataTable = dataTableList.get(indexRangeList);
+            DataTable selectedDataTable = null;
 
+            if (rangeConfig.getIndexTableExcel() != null) {
+                // Find correct data for this rangeConfig
+                for (int indexFindDataTable = 0; indexFindDataTable < dataTableList.size(); indexFindDataTable++) {
+                    if (dataTableList.get(indexFindDataTable).getIndexTableExcel().equals(rangeConfig.getIndexTableExcel())) {
+                        selectedDataTable = dataTableList.get(indexFindDataTable);
+                        break;
+                    }
+                }
+            } else {
+                selectedDataTable = dataTableList.getFirst();
+            }
+
+            if (selectedDataTable != null) {
                 // loop all rowData in dataTable
                 for (int indexRowData = 0; indexRowData < selectedDataTable.getRowData().size(); indexRowData++) {
                     RowData selectedRowData = selectedDataTable.getRowData().get(indexRowData);
@@ -485,7 +507,6 @@ public class Main {
                         CellAddress endTemplate = new CellAddress(rangeConfig.getEnd());
 
                         int highRow = rangeConfig.getHeightRange();
-
 //                        System.out.println("level: " + level + "    generate leaf           (" + (beginTemplate.getRow()) + "," + (endTemplate.getRow()) + ") -> " + (startRow + totalAppendRow));
                         targetSheet.copyRows(beginTemplate.getRow(), endTemplate.getRow(), startRow + totalAppendRow, new CellCopyPolicy());
 
@@ -555,18 +576,22 @@ public class Main {
 
             // generate space between two datatable - skip last dataTable
             if (indexRangeList != rangeList.size() - 1) {
+                System.out.println("generate space between two datatable - skip last dataTable: " + new CellAddress(rangeConfig.getEnd()).getRow() + " " + new CellAddress(rangeList.get(indexRangeList + 1).getBegin()).getRow());
+
                 Range nextRangeConfig = rangeList.get(indexRangeList + 1);
 
                 int endRowRangeTemplate = new CellAddress(rangeConfig.getEnd()).getRow();
                 int startNextRowRangeTemplate = new CellAddress(nextRangeConfig.getBegin()).getRow();
 
-                int highRow = startNextRowRangeTemplate - endRowRangeTemplate - 1;
+                if (endRowRangeTemplate + 1 <= startNextRowRangeTemplate - 1) {
+                    int highRow = startNextRowRangeTemplate - endRowRangeTemplate - 1;
 
 //                System.out.println("level: " + level + "    generate space          (" + (endRowRangeTemplate + 1) + "," + (startNextRowRangeTemplate - 1) + ") -> " + (startRow + totalAppendRow));
-                targetSheet.copyRows(endRowRangeTemplate + 1, startNextRowRangeTemplate - 1, startRow + totalAppendRow, new CellCopyPolicy());
-//                exportTempFile(targetSheet);
+                    targetSheet.copyRows(endRowRangeTemplate + 1, startNextRowRangeTemplate - 1, startRow + totalAppendRow, new CellCopyPolicy());
+                exportTempFile(targetSheet);
 
-                totalAppendRow += highRow;
+                    totalAppendRow += highRow;
+                }
             }
         }
 
@@ -619,7 +644,7 @@ public class Main {
         }
     }
 
-    private static void removeRangeTemplate (SheetConfig sheetConfig, XSSFSheet sheet) {
+    private static void removeRangeTemplate (SheetConfig sheetConfig, XSSFSheet sheet) throws Exception {
         int heightParent = sheetConfig.getArrRange().getFirst().getHeightRange();
         int firstRowNum = new CellAddress(sheetConfig.getArrRange().getFirst().getBegin()).getRow();
         int lastRowNum = new CellAddress(sheetConfig.getArrRange().getFirst().getEnd()).getRow();
@@ -638,17 +663,21 @@ public class Main {
 
         for (int i = 0; i < listMergeCell.size(); i++) {
             CellRangeAddress cellAddresses = listMergeCell.get(i);
-            if (cellAddresses.getFirstRow() >= firstRowNum && cellAddresses.getLastRow() <= lastRowNum && cellAddresses.getFirstColumn() >= firstColNum && cellAddresses.getLastColumn() <= lastColNum) {
+
+            if (cellAddresses.getFirstRow() >= firstRowNum && cellAddresses.getLastRow() <= lastRowNum) {
                 listIndexMergeRegions.add(i);
             }
         }
         sheet.removeMergedRegions(listIndexMergeRegions);
+
+        exportTempFile(sheet);
 
         int lastRow = sheet.getLastRowNum();
         sheet.shiftRows(firstRowNum + heightParent, lastRow, -heightParent, true, true);
     }
 
     private static void fillData (Range range, JsonObject data, XSSFSheet targetSheet, ConfigSetting configSetting, String regex) throws Exception {
+
         int rowStart = new CellAddress(range.getBegin()).getRow();
         int rowEnd = new CellAddress(range.getEnd()).getRow();
 
@@ -705,6 +734,11 @@ public class Main {
                         }
                     } else {
                         cell.setCellValue(newValue);
+                    }
+
+                    CellStyle cellStyle = cell.getCellStyle();
+                    if (cellStyle.getWrapText()) {
+                        rowData.setHeight((short)-1);
                     }
 
                     fillDataCellRecursive(cell, data, configSetting, regex);

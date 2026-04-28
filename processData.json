@@ -1,135 +1,302 @@
 {
-  "level" : 0,
-  "data" : {
-    "Parent 1" : {
-      "value" : {
-        "PARENT" : "Parent 1"
-      },
-      "child" : {
-        "level" : 1,
-        "data" : {
-          "1" : {
-            "value" : {
-              "ROW_NUM" : 1,
-              "CODE" : "A001",
-              "NAME" : "Nguyen Van A001",
-              "NAME_GROUP" : "Group 1",
-              "END_GROUP" : "Group 1",
-              "PARENT" : "Parent 1"
-            }
-          },
-          "2" : {
-            "value" : {
-              "ROW_NUM" : 2,
-              "CODE" : "A002",
-              "NAME" : "Nguyen Van A002",
-              "NAME_GROUP" : "Group 1",
-              "END_GROUP" : "Group 1",
-              "PARENT" : "Parent 1"
-            }
-          },
-          "3" : {
-            "value" : {
-              "ROW_NUM" : 3,
-              "CODE" : "A003",
-              "NAME" : "Nguyen Van A003",
-              "NAME_GROUP" : "Group 1",
-              "END_GROUP" : "Group 1",
-              "PARENT" : "Parent 1"
-            }
-          },
-          "4" : {
-            "value" : {
-              "ROW_NUM" : 4,
-              "CODE" : "A004",
-              "NAME" : "Nguyen Van A004",
-              "NAME_GROUP" : "Group 1",
-              "END_GROUP" : "Group 1",
-              "PARENT" : "Parent 1"
-            }
-          }
-        }
-      }
+  "general": [
+    {
+      "name": "dd",
+      "data": "DD",
+      "format": "string"
     },
-    "Parent 2" : {
-      "value" : {
-        "PARENT" : "Parent 2"
-      },
-      "child" : {
-        "level" : 1,
-        "data" : {
-          "5" : {
-            "value" : {
-              "ROW_NUM" : 5,
-              "CODE" : "A005",
-              "NAME" : "Nguyen Van A005",
-              "NAME_GROUP" : "Group 1",
-              "END_GROUP" : "Group 1",
-              "PARENT" : "Parent 2"
-            }
-          },
-          "6" : {
-            "value" : {
-              "ROW_NUM" : 6,
-              "CODE" : "A006",
-              "NAME" : "Nguyen Van A006",
-              "NAME_GROUP" : "Group 1",
-              "END_GROUP" : "Group 1",
-              "PARENT" : "Parent 2"
-            }
-          },
-          "7" : {
-            "value" : {
-              "ROW_NUM" : 7,
-              "CODE" : "A007",
-              "NAME" : "Nguyen Van A007",
-              "NAME_GROUP" : "Group 1",
-              "END_GROUP" : "Group 1",
-              "PARENT" : "Parent 2"
-            }
-          },
-          "8" : {
-            "value" : {
-              "ROW_NUM" : 8,
-              "CODE" : "A008",
-              "NAME" : "Nguyen Van A008",
-              "NAME_GROUP" : "Group 1",
-              "END_GROUP" : "Group 1",
-              "PARENT" : "Parent 2"
-            }
-          }
-        }
-      }
+    {
+      "name": "mm",
+      "data": "MM",
+      "format": "string"
     },
-    "Parent 3" : {
-      "value" : {
-        "PARENT" : "Parent 3"
-      },
-      "child" : {
-        "level" : 1,
-        "data" : {
-          "9" : {
-            "value" : {
-              "ROW_NUM" : 9,
-              "CODE" : "A009",
-              "NAME" : "Nguyen Van A009",
-              "NAME_GROUP" : "Group 1",
-              "END_GROUP" : "Group 1",
-              "PARENT" : "Parent 3"
-            }
-          },
-          "10" : {
-            "value" : {
-              "ROW_NUM" : 10,
-              "CODE" : "A010",
-              "NAME" : "Nguyen Van A010",
-              "NAME_GROUP" : "Group 1",
-              "END_GROUP" : "Group 1",
-              "PARENT" : "Parent 3"
-            }
-          }
-        }
-      }
+    {
+      "name": "yyyy",
+      "data": "YYYY",
+      "format": "string"
+    },
+    {
+      "name": "cust_name",
+      "data": "CUST_NAME",
+      "format": "string"
+    },
+    {
+      "name": "address",
+      "data": "ADDRESS",
+      "format": "string"
+    },
+    {
+      "name": "mobile",
+      "data": "MOBILE",
+      "format": "string"
+    },
+    {
+      "name": "email",
+      "data": "EMAIL",
+      "format": "string"
+    },
+    {
+      "name": "birthday",
+      "data": "BIRTHDAY",
+      "format": "string"
+    },
+    {
+      "name": "national",
+      "data": "NATIONAL",
+      "format": "string"
+    },
+    {
+      "name": "gender",
+      "data": "GENDER",
+      "format": "string"
+    },
+    {
+      "name": "card_id",
+      "data": "CARD_ID",
+      "format": "string"
+    },
+    {
+      "name": "card_date",
+      "data": "CARD_DATE",
+      "format": "string"
+    },
+    {
+      "name": "card_address",
+      "data": "CARD_ADDRESS",
+      "format": "string"
+    },
+    {
+      "name": "contract_address",
+      "data": "CONTRACT_ADDRESS",
+      "format": "string"
+    },
+    {
+      "name": "bank_number_no",
+      "data": "BANK_NUMBER_NO",
+      "format": "string"
+    },
+    {
+      "name": "bank_name",
+      "data": "BANK_NAME",
+      "format": "string"
+    },
+    {
+      "name": "tc_cust_name",
+      "data": "TC_CUST_NAME",
+      "format": "string"
+    },
+    {
+      "name": "tc_address",
+      "data": "TC_ADDRESS",
+      "format": "string"
+    },
+    {
+      "name": "tc_mobile",
+      "data": "TC_MOBILE",
+      "format": "string"
+    },
+    {
+      "name": "tc_email",
+      "data": "TC_EMAIL",
+      "format": "string"
+    },
+    {
+      "name": "tc_card_id",
+      "data": "TC_CARD_ID",
+      "format": "string"
+    },
+    {
+      "name": "tc_card_date",
+      "data": "TC_CARD_DATE",
+      "format": "string"
+    },
+    {
+      "name": "tc_card_address",
+      "data": "TC_CARD_ADDRESS",
+      "format": "string"
+    },
+    {
+      "name": "tax_code",
+      "data": "TAX_CODE",
+      "format": "string"
+    },
+    {
+      "name": "fax",
+      "data": "FAX",
+      "format": "string"
+    },
+    {
+      "name": "tc_bank_number_no",
+      "data": "TC_BANK_NUMBER_NO",
+      "format": "string"
+    },
+    {
+      "name": "tc_bank_name",
+      "data": "TC_BANK_NAME",
+      "format": "string"
+    },
+    {
+      "name": "repre_name",
+      "data": "REPRE_NAME",
+      "format": "string"
+    },
+    {
+      "name": "repre_posi",
+      "data": "REPRE_POSI",
+      "format": "string"
+    },
+    {
+      "name": "repre_birthday",
+      "data": "REPRE_BIRTHDAY",
+      "format": "string"
+    },
+    {
+      "name": "repre_national",
+      "data": "REPRE_NATIONAL",
+      "format": "string"
+    },
+    {
+      "name": "repre_gender",
+      "data": "REPRE_GENDER",
+      "format": "string"
+    },
+    {
+      "name": "repre_card_id",
+      "data": "REPRE_CARD_ID",
+      "format": "string"
+    },
+    {
+      "name": "repre_card_date",
+      "data": "REPRE_CARD_DATE",
+      "format": "string"
+    },
+    {
+      "name": "repre_card_address",
+      "data": "REPRE_CARD_ADDRESS",
+      "format": "string"
+    },
+    {
+      "name": "repre_address",
+      "data": "REPRE_ADDRESS",
+      "format": "string"
+    },
+    {
+      "name": "repre_mobile",
+      "data": "REPRE_MOBILE",
+      "format": "string"
+    },
+    {
+      "name": "repre_email",
+      "data": "REPRE_EMAIL",
+      "format": "string"
+    },
+    {
+      "name": "auth_name",
+      "data": "AUTH_NAME",
+      "format": "string"
+    },
+    {
+      "name": "auth_posi",
+      "data": "AUTH_POSI",
+      "format": "string"
+    },
+    {
+      "name": "auth_no",
+      "data": "AUTH_NO",
+      "format": "string"
+    },
+    {
+      "name": "auth_birthday",
+      "data": "AUTH_BIRTHDAY",
+      "format": "string"
+    },
+    {
+      "name": "auth_national",
+      "data": "AUTH_NATIONAL",
+      "format": "string"
+    },
+    {
+      "name": "auth_gender",
+      "data": "AUTH_GENDER",
+      "format": "string"
+    },
+    {
+      "name": "auth_card_id",
+      "data": "AUTH_CARD_ID",
+      "format": "string"
+    },
+    {
+      "name": "auth_card_date",
+      "data": "AUTH_CARD_DATE",
+      "format": "string"
+    },
+    {
+      "name": "auth_card_address",
+      "data": "AUTH_CARD_ADDRESS",
+      "format": "string"
+    },
+    {
+      "name": "auth_address",
+      "data": "AUTH_ADDRESS",
+      "format": "string"
+    },
+    {
+      "name": "auth_mobile",
+      "data": "AUTH_MOBILE",
+      "format": "string"
+    },
+    {
+      "name": "auth_email",
+      "data": "AUTH_EMAIL",
+      "format": "string"
     }
-  }
+  ]
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
