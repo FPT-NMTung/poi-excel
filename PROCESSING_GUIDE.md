@@ -3,7 +3,7 @@
 ## Mục lục
 
 1. [Tổng quan kiến trúc](#1-tổng-quan-kiến-trúc)
-2. [Luồng xử lý Excel nâng cao (Main.java)](#2-luồng-xử-lý-excel-nâng-cao-mainjava)
+2. [Luồng xử lý Excel (Main.java)](#2-luồng-xử-lý-excel-mainjava)
 3. [Luồng xử lý Word (MainDocx.java)](#3-luồng-xử-lý-word-maindocxjava)
 4. [Hướng dẫn cấu hình Excel (Main.java)](#4-hướng-dẫn-cấu-hình-excel-mainjava)
 5. [Hướng dẫn cấu hình Word (MainDocx.java)](#5-hướng-dẫn-cấu-hình-word-maindocxjava)
@@ -12,8 +12,6 @@
 ---
 
 ## 1. Tổng quan kiến trúc
-
-Hệ thống gồm hai luồng xử lý chính:
 
 | Module | File | Mục đích |
 |---|---|---|
@@ -27,221 +25,150 @@ Thư viện sử dụng:
 
 ---
 
-## 2. Luồng xử lý Excel nâng cao (Main.java)
+## 2. Luồng xử lý Excel (Main.java)
 
-Dùng khi template Excel có **dữ liệu phân cấp** (nhiều cấp cha-con), nhiều bảng khác nhau trên cùng một sheet, hoặc cần merge cell tự động.
+Dùng khi template Excel có **dữ liệu phân cấp** (nhiều cấp cha-con), nhiều bảng trên cùng sheet, hoặc cần merge cell tự động.
 
-```
-Template Excel (.xlsx)
-        │
-        ▼
-┌───────────────────────────────────────────────┐
-│ BƯỚC 1: Đọc file template                     │
-│  • Mở file REPORT_CQQL_07.xlsx (XSSFWorkbook) │
-│  • Đọc sheet "config" để lấy cấu hình         │
-└───────────────────────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────────────────────┐
-│ BƯỚC 2: Parse cấu hình từ sheet "config"      │
-│  • Đọc các cờ toàn cục:                       │
-│    - isHasGeneralData = 1/0                   │
-│    - isMergeCell = 1/0                        │
-│    - isMultipleSheet = 1/0                    │
-│  • Đọc các range_N → tạo cây Range phân cấp   │
-│    (range_0 là cấp cha, range_1 là cấp con…)  │
-└───────────────────────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────────────────────┐
-│ BƯỚC 3: Đọc dữ liệu JSON (testData.json)      │
-│  • Parse JsonArray từ file                    │
-│  • Nếu isHasGeneralData=1:                    │
-│    - Phần tử [0] là dữ liệu general           │
-│    - Phần tử [1..n] là dữ liệu bảng           │
-└───────────────────────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────────────────────┐
-│ BƯỚC 4: Xây dựng cây dữ liệu (processData)    │
-│  • Duyệt từng phần tử JSON                    │
-│  • Gom nhóm theo columnData (khóa nhóm)       │
-│  • Nếu có indexTableExcel:                    │
-│    - Phân loại dữ liệu vào đúng DataTable     │
-│  • Gọi đệ quy để xây dựng cây LevelDataTable  │
-│    LevelDataTable                             │
-│    └── DataTable (TABLE_01)                   │
-│        ├── RowData (khách A)                  │
-│        │   └── LevelDataTable (cấp con)       │
-│        │       └── DataTable                  │
-│        │           ├── RowData (cổ phiếu FPT) │
-│        │           └── RowData (cổ phiếu MBS) │
-│        └── RowData (khách B)                  │
-└───────────────────────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────────────────────┐
-│ BƯỚC 5: Tính chiều cao bảng cần thêm          │
-│  • Duyệt đệ quy cây dữ liệu                  │
-│  • Tính tổng số hàng sẽ được sinh ra          │
-│  • Bao gồm: hàng dữ liệu + khoảng cách       │
-│    giữa các bảng + phần đầu/cuối của bảng cha │
-└───────────────────────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────────────────────┐
-│ BƯỚC 6: Dịch chuyển footer xuống              │
-│  • shiftRows() đẩy phần footer của sheet      │
-│    xuống đúng số hàng cần thêm                │
-│  • Tạo khoảng trống để điền dữ liệu vào       │
-└───────────────────────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────────────────────┐
-│ BƯỚC 7: Sinh file từ template (generateFile)   │
-│  • Duyệt đệ quy cây dữ liệu và cây Range      │
-│  • Với mỗi RowData:                           │
-│    - Nếu là leaf (không có con):              │
-│      → copyRows từ template vào vị trí mới    │
-│      → fillData: thay thế tag <#table.KEY>    │
-│        bằng giá trị từ JSON                  │
-│    - Nếu là branch (có con):                  │
-│      → Copy phần đầu (trước vùng con)         │
-│      → Gọi đệ quy để sinh hàng con           │
-│      → Copy phần cuối (sau vùng con)          │
-│      → fillData cho toàn bộ vùng              │
-│  • Sinh khoảng cách giữa các bảng anh em      │
-└───────────────────────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────────────────────┐
-│ BƯỚC 8: Xóa các hàng template gốc            │
-│  • Xóa vùng range template khỏi sheet         │
-│  • Hủy merge cell trong vùng template         │
-│  • shiftRows để lấp khoảng trống              │
-└───────────────────────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────────────────────┐
-│ BƯỚC 9: Điền dữ liệu general (nếu có)         │
-│  • Tìm các ô chứa tag <#general.KEY>          │
-│  • Thay thế bằng giá trị từ phần tử [0] JSON  │
-│  • Áp dụng cho vùng trước bảng và sau bảng    │
-└───────────────────────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────────────────────┐
-│ BƯỚC 10: Merge cell (nếu isMergeCell=1)        │
-│  • Quét toàn bộ sheet tìm tag <#merge.KEY>    │
-│  • Gom nhóm các ô có cùng KEY                 │
-│  • Thực hiện addMergedRegion cho nhóm >= 2 ô  │
-└───────────────────────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────────────────────┐
-│ BƯỚC 11: Xóa sheet config và xuất file        │
-│  • removeSheetAt("config")                    │
-│  • Ghi ra result.xlsx                         │
-└───────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A([Bắt đầu]) --> B
+
+    B["**Bước 1: Đọc file template**
+    Mở REPORT_CQQL_07.xlsx
+    bằng XSSFWorkbook"]
+
+    B --> C["**Bước 2: Parse cấu hình** từ sheet 'config'
+    - Đọc cờ: isHasGeneralData / isMergeCell / isMultipleSheet
+    - Đọc range_N → xây dựng cây Range phân cấp
+      (range_0 = cấp cha, range_1 = cấp con, ...)"]
+
+    C --> D["**Bước 3: Đọc dữ liệu JSON** từ testData.json
+    - Phần tử [0]: dữ liệu general (nếu isHasGeneralData = 1)
+    - Phần tử [1..n]: dữ liệu bảng"]
+
+    D --> E["**Bước 4: Xây dựng cây dữ liệu**
+    Duyệt từng phần tử JSON, gom nhóm theo columnData
+    → tạo cây LevelDataTable phân cấp
+
+    LevelDataTable
+    └── DataTable (TABLE_01)
+        ├── RowData (khách A)
+        │   └── LevelDataTable
+        │       ├── RowData (CP FPT)
+        │       └── RowData (CP MBS)
+        └── RowData (khách B)"]
+
+    E --> F["**Bước 5: Tính chiều cao bảng**
+    Duyệt đệ quy cây dữ liệu
+    → tính tổng số hàng sẽ sinh ra
+    (hàng data + khoảng cách + phần đầu/cuối cha)"]
+
+    F --> G["**Bước 6: Dịch chuyển footer**
+    shiftRows() đẩy footer xuống
+    đúng số hàng cần thêm
+    → tạo khoảng trống để điền dữ liệu"]
+
+    G --> H["**Bước 7: Sinh dữ liệu từ template**
+    Duyệt đệ quy cây dữ liệu + cây Range:
+
+    Leaf node → copyRows + fillData thay tag ⟨#table.KEY⟩
+    Branch node → copy đầu → đệ quy con → copy cuối → fillData"]
+
+    H --> I["**Bước 8: Xóa hàng template gốc**
+    - Xóa vùng range template khỏi sheet
+    - Hủy merge cell trong vùng đó
+    - shiftRows lấp khoảng trống"]
+
+    I --> J{"isHasGeneralData = 1?"}
+    J -- Có --> K["**Bước 9: Điền dữ liệu general**
+    Tìm tag ⟨#general.KEY⟩ trong các ô
+    ngoài vùng range (tiêu đề, footer...)
+    → thay bằng giá trị từ JSON[0]"]
+    J -- Không --> L
+
+    K --> L{"isMergeCell = 1?"}
+    L -- Có --> M["**Bước 10: Merge cell**
+    Tìm tag ⟨#merge.KEY⟩ trên toàn sheet
+    Gom nhóm các ô cùng KEY
+    → addMergedRegion cho nhóm ≥ 2 ô"]
+    L -- Không --> N
+
+    M --> N["**Bước 11: Xuất file**
+    Xóa sheet 'config'
+    Ghi ra result.xlsx"]
+
+    N --> Z([Kết thúc])
 ```
 
 ---
 
 ## 3. Luồng xử lý Word (MainDocx.java)
 
-```
-Template Word (.docx)
-        │
-        ▼
-┌─────────────────────────────────────────────────┐
-│ BƯỚC 1: Đọc file template                       │
-│  • Mở file 22A-LK.docx (XWPFDocument)           │
-└─────────────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────┐
-│ BƯỚC 2: Đọc dữ liệu JSON (dataDocx.json)        │
-│  • Parse JsonArray                               │
-│  • Phần tử [0]: dữ liệu general                 │
-│  • Phần tử [1..n]: dữ liệu bảng                 │
-│    (mỗi phần tử có trường NAME_TABLE            │
-│     để phân loại vào bảng nào)                  │
-└─────────────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────┐
-│ BƯỚC 3: Đọc cấu hình từ Comment Word            │
-│  • Lấy danh sách comments của document          │
-│  • Parse nội dung comment dưới dạng JSON        │
-│  • Trích xuất:                                  │
-│    - "general": danh sách trường dữ liệu chung  │
-│    - "table": danh sách cấu hình bảng           │
-│      (tên bảng, index row, các cột)             │
-│  • Xóa toàn bộ comment khỏi document sau đó    │
-└─────────────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────┐
-│ BƯỚC 4: Điền dữ liệu general                   │
-│  • Với mỗi trường trong config.general:         │
-│    - Tạo searchText = "<#general.NAME>"         │
-│    - Lấy giá trị từ JSON[0][data]               │
-│    - Áp dụng format (number, checkbox, …)       │
-│    - Tìm và thay thế trong:                     │
-│      a) Header của document                     │
-│      b) Footer của document                     │
-│      c) Tất cả paragraph                        │
-│      d) Tất cả ô trong tất cả bảng             │
-│         (kể cả bảng lồng nhau - đệ quy)         │
-└─────────────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────┐
-│ BƯỚC 5: Xử lý dữ liệu bảng (processData)        │
-│  • Tạo danh sách TableData tương ứng với        │
-│    từng bảng trong config                       │
-│  • Với mỗi phần tử JSON [1..n]:                 │
-│    - Đọc NAME_TABLE để xác định bảng            │
-│    - Gọi đệ quy processDataRecursive:            │
-│      • Kiểm tra giá trị index row               │
-│        (config.table[i].row.index)              │
-│      • Nếu chưa có → tạo RowData mới           │
-│      • Nếu đã có và có row con → gọi đệ quy     │
-│        vào childRow                             │
-└─────────────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────┐
-│ BƯỚC 6: Sinh hàng bảng (generateTable)          │
-│  • Tìm bảng Word chứa tag "<#TBG>"              │
-│  • Với mỗi bảng được tìm thấy:                  │
-│    a) Gọi generateTableRowTable:                │
-│       - Nếu không có row con (leaf):            │
-│         • Copy hàng template                    │
-│         • Điền dữ liệu tag <#table.NAME>        │
-│         • Áp dụng format cho từng cột           │
-│         • Chèn hàng mới vào bảng               │
-│       - Nếu có row con (branch):                │
-│         • Copy phần trên (trước row con)        │
-│         • Gọi đệ quy cho row con               │
-│         • Copy phần dưới (sau row con)          │
-│    b) Xóa các hàng template gốc               │
-│       (từ startRow đến endRow trong config)     │
-│    c) Xóa hàng chứa "<#TBG>"                   │
-└─────────────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────┐
-│ BƯỚC 7: Xóa các dòng đánh dấu xóa             │
-│  • Quét toàn bộ body element từ cuối lên đầu   │
-│  • Nếu paragraph có text = "<#DELETE_LINE>"    │
-│    → xóa paragraph đó                          │
-└─────────────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────┐
-│ BƯỚC 8: Xuất file result.docx                   │
-└─────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A([Bắt đầu]) --> B
+
+    B["**Bước 1: Đọc file template**
+    Mở 22A-LK.docx bằng XWPFDocument"]
+
+    B --> C["**Bước 2: Đọc dữ liệu JSON** từ dataDocx.json
+    - Phần tử [0]: dữ liệu general
+    - Phần tử [1..n]: dữ liệu bảng
+      (mỗi phần tử có trường NAME_TABLE)"]
+
+    C --> D["**Bước 3: Đọc cấu hình** từ Comment Word
+    - Parse nội dung comment dạng JSON
+    - Trích xuất 'general' và 'table'
+    - Xóa toàn bộ comment sau khi đọc xong"]
+
+    D --> E{"Có config general?"}
+
+    E -- Có --> F["**Bước 4: Điền dữ liệu general**
+    Với mỗi trường trong config.general:
+    → Tạo searchText = ⟨#general.NAME⟩
+    → Lấy giá trị từ JSON[0], áp dụng format
+    → Thay thế trong:
+       • Header / Footer
+       • Tất cả paragraph
+       • Tất cả ô bảng (kể cả bảng lồng nhau)"]
+
+    E -- Không --> G
+
+    F --> G{"Có config table?"}
+
+    G -- Có --> H["**Bước 5: Xử lý dữ liệu bảng**
+    Với mỗi phần tử JSON[1..n]:
+    → Đọc NAME_TABLE xác định bảng
+    → processDataRecursive:
+       • Nếu chưa có key → tạo RowData mới
+       • Nếu đã có + có row con → đệ quy vào childRow"]
+
+    G -- Không --> K
+
+    H --> I["**Bước 6: Sinh hàng bảng**
+    Tìm bảng Word chứa tag ⟨#TBG⟩
+
+    Leaf (không có row con):
+    → Copy hàng template
+    → Điền tag ⟨#table.NAME⟩, áp dụng format
+    → Chèn hàng vào bảng
+
+    Branch (có row con):
+    → Copy phần trên → đệ quy con → Copy phần dưới
+
+    → Xóa hàng template gốc
+    → Xóa hàng ⟨#TBG⟩"]
+
+    I --> K
+
+    K["**Bước 7: Xóa dòng đánh dấu**
+    Quét body từ cuối lên đầu
+    → Xóa paragraph có text = ⟨#DELETE_LINE⟩"]
+
+    K --> L["**Bước 8: Xuất file**
+    Ghi ra result.docx"]
+
+    L --> Z([Kết thúc])
 ```
 
 ---
@@ -291,7 +218,7 @@ Mỗi dòng `range_N` trong sheet config gồm **5 cột**:
 
 ```
 A                    | B    | C    | D               | E
----------------------|------|------|-----------------|--------------------
+---------------------|------|------|-----------------|----
 isHasGeneralData     | 1    |      |                 |
 isMergeCell          | 0    |      |                 |
 isMultipleSheet      | 0    |      |                 |
@@ -299,7 +226,7 @@ range_0              | A5   | H5   | CUST_ID         |
 range_1              | A6   | H6   |                 |
 ```
 
-Giải thích: Cấp 0 nhóm theo `CUST_ID` (vùng từ A5 đến H5). Cấp 1 là hàng con (leaf) tại A6:H6.
+Giải thích: Cấp 0 nhóm theo `CUST_ID` (vùng A5:H5). Cấp 1 là hàng con (leaf) tại A6:H6.
 
 #### Ví dụ cấu hình sheet config (có nhiều bảng, multiple sheet)
 
@@ -517,37 +444,12 @@ Giải thích: Hàng cha ở range `2|5`, trong đó hàng con nằm ở range `
 
 ### 5.5. Các tag trong tài liệu Word
 
-#### Tag dữ liệu general
-
-```
-<#general.TÊN_TAG>
-```
-
-Đặt ở bất kỳ đâu trong tài liệu (header, footer, paragraph, ô bảng).
-
-#### Tag dữ liệu bảng
-
-```
-<#table.TÊN_TAG>
-```
-
-Đặt trong ô của bảng Word tại hàng template.
-
-#### Tag đánh dấu cuối bảng template
-
-```
-<#TBG>
-```
-
-Đặt trong hàng cuối cùng của bảng template (hàng không phải dữ liệu, dùng để đánh dấu kết thúc). Hàng này sẽ bị xóa sau khi xử lý.
-
-#### Tag xóa dòng
-
-```
-<#DELETE_LINE>
-```
-
-Đặt trong một paragraph muốn bị xóa sau khi xử lý xong.
+| Tag | Vị trí đặt | Mô tả |
+|---|---|---|
+| `<#general.TÊN_TAG>` | Header, footer, paragraph, ô bảng | Điền dữ liệu chung từ JSON[0] |
+| `<#table.TÊN_TAG>` | Ô bảng tại hàng template | Điền dữ liệu bảng |
+| `<#TBG>` | Hàng cuối của bảng template | Đánh dấu kết thúc template — sẽ bị xóa sau khi xử lý |
+| `<#DELETE_LINE>` | Paragraph bất kỳ | Đánh dấu dòng cần xóa sau khi xử lý |
 
 ### 5.6. File JSON dữ liệu Word (dataDocx.json)
 
@@ -566,14 +468,6 @@ Giải thích: Hàng cha ở range `2|5`, trong đó hàng con nằm ở range `
     "QUANTITY": "1000",
     "PRICE": "75000",
     "AMOUNT": "75000000"
-  },
-  {
-    "NAME_TABLE": "ORDER_BUY",
-    "ROW_NUM_ORDER_BUY": "2",
-    "SHARE_CODE": "MBS",
-    "QUANTITY": "500",
-    "PRICE": "12000",
-    "AMOUNT": "6000000"
   },
   {
     "NAME_TABLE": "ORDER_SELL",
@@ -619,9 +513,9 @@ Giải thích: Hàng cha ở range `2|5`, trong đó hàng con nằm ở range `
 
 | Giá trị trong JSON | Ký hiệu hiển thị |
 |---|---|
-| `TICK_V` | ký hiệu tick (✓) — `` |
-| `TICK_X` | ký hiệu X (✗) — `` |
-| Bất kỳ giá trị khác | ô trống — `` |
+| `TICK_V` | ký hiệu tick (✓) |
+| `TICK_X` | ký hiệu X (✗) |
+| Bất kỳ giá trị khác | ô trống |
 
 ---
 
